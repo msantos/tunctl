@@ -115,3 +115,6 @@ tunctl is a pure Erlang API for creating and using TUN/TAP interfaces.
 ## TODO
 
 * make sure tunctl never leaks file descriptors
+
+* Fix persist: setting the device non-persistent does not always remove
+  the device
