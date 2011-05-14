@@ -114,7 +114,26 @@ tunctl is a pure Erlang API for creating and using TUN/TAP interfaces.
 
 ## TODO
 
-* make sure tunctl never leaks file descriptors
+* on Linux, the TUNSETIFF ioctl request to create the interface requires
+  CAP_NET_ADMIN privileges. Look at moving the interface creation into
+  the procket setuid binary for OSes that use the multiplexing dev.
 
-* Fix persist: setting the device non-persistent does not always remove
-  the device
+  WORK AROUND:
+  setcap cap_net_admin=ep /path/to/bin/beam
+
+* compat for Mac OS X: uses /dev/tunN and /dev/tapN devices
+
+* compat for other BSDs: /dev/tun multiplex dev, probably the same issue
+  with interface creation
+
+* make sure tunctl can never leak file descriptors
+
+* the tun device is not removed even after the fd is closed
+
+* add {active,true} mode using open_port/2
+
+* add support for the tun packet header
+
+* add support for tun filtering
+
+* simple vpn client/server example
