@@ -45,6 +45,8 @@
 
         read/2, write/2,
 
+        header/1,
+
         up/2, down/1
     ]).
 
@@ -65,6 +67,7 @@
 -define(IFF_RUNNING, 16#40).
 -define(IFF_UP, 16#01).
 
+-define(UINT16, 2/native-unsigned-integer-unit:8).
 
 %%--------------------------------------------------------------------
 %%% Exports
@@ -78,6 +81,9 @@ create(Ifname, Opt) when is_list(Ifname) ->
     create(list_to_binary(Ifname), Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     start_link(Ifname, Opt).
+
+header(<<Flags:?UINT16, Proto:?UINT16, Buf/binary>>) ->
+    {tun_pi, Flags, Proto, Buf}.
 
 devname(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, devname).

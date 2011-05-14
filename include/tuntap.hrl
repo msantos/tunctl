@@ -54,3 +54,16 @@
 -define(IFF_ONE_QUEUE, 16#2000).
 -define(IFF_VNET_HDR, 16#4000).
 -define(IFF_TUN_EXCL, 16#8000).
+
+-record(tun_pi, {
+        flags,  % 2/native-unsigned-integer-unit:8
+        proto   % 2/native-unsigned-integer-unit:8
+    }).
+
+-define(TUN_FLT_ALLMULTI, 16#0001).
+
+-record(tun_filter, {
+        flags, % TUN_FLT_ flags: 2/native-unsigned-integer-unit:8
+        count, % 2/native-unsigned-integer-unit:8
+        addr
+}).
