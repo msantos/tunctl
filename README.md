@@ -1,5 +1,5 @@
 
-tunctl is a pure Erlang API for creating and using TUN/TAP interfaces.
+tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 
 ## EXPORTS
@@ -106,9 +106,12 @@ tunctl is a pure Erlang API for creating and using TUN/TAP interfaces.
     3> tunctl:up(Ref, "192.168.123.4").
     ok
 
-    4> tunctl:read(Ref, 1024).
+    4> {ok, Buf} = tunctl:read(Ref, 1500).
     {ok,<<1,0,94,0,0,22,190,138,20,22,76,120,8,0,70,192,0,40,
           0,0,64,0,1,2,200,76,192,...>>}
+
+    5> tunctl:read(Ref, Buf).
+    ok
 
     5> tunctl:destroy(Ref).
 
@@ -118,8 +121,8 @@ tunctl is a pure Erlang API for creating and using TUN/TAP interfaces.
   CAP_NET_ADMIN privileges. Look at moving the interface creation into
   the procket setuid binary for OSes that use the multiplexing dev.
 
-  WORK AROUND:
-  setcap cap_net_admin=ep /path/to/bin/beam
+      WORK AROUND:
+      setcap cap_net_admin=ep /path/to/bin/beam
 
 * compat for Mac OS X: uses /dev/tunN and /dev/tapN devices
 
@@ -131,8 +134,6 @@ tunctl is a pure Erlang API for creating and using TUN/TAP interfaces.
 * the tun device is not removed even after the fd is closed
 
 * add {active,true} mode using open_port/2
-
-* add support for the tun packet header
 
 * add support for tun filtering
 
