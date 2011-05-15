@@ -37,7 +37,7 @@
 
 -export([
         create/0, create/1, create/2,
-        devname/1, flags/1,
+        devname/1, flags/1, fd/1,
         destroy/1,
 
         persist/2,
@@ -91,6 +91,9 @@ devname(Ref) when is_pid(Ref) ->
 flags(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, flags).
 
+fd(Ref) when is_pid(Ref) ->
+    gen_server:call(Ref, fd).
+
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy).
 
@@ -126,6 +129,7 @@ start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
 %%% Callbacks
 %%--------------------------------------------------------------------
 init([Dev, Opt]) ->
+    process_flag(trap_exit, true),
     Flag = lists:foldl(fun(N, F) -> F bor flag(N) end, 0, Opt),
     % if Dev is NULL, the tuntap driver will choose an
     % interface name
@@ -142,6 +146,9 @@ handle_call(devname, _From, #state{dev = Dev} = State) ->
 
 handle_call(flags, _From, #state{flag = Flag} = State) ->
     {reply, Flag, State};
+
+handle_call(fd, _From, #state{fd = FD} = State) ->
+    {reply, FD, State};
 
 handle_call({read, Len}, _From, #state{fd = FD} = State) ->
     Reply = procket:read(FD, Len),
@@ -183,7 +190,6 @@ handle_info(Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, #state{fd = FD, dev = Dev}) ->
-    error_logger:info_report([{see, this}]),
     ok = ifdown(Dev),
     ok = set_persist(FD, bool(false)),
     ok = procket:close(FD),
