@@ -47,7 +47,8 @@
 
         header/1,
 
-        up/2, down/1
+        up/2, down/1,
+        mtu/1, mtu/2
     ]).
 
 -export([start_link/2]).
@@ -115,6 +116,14 @@ up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
 down(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, down).
 
+mtu(Ref) when is_pid(Ref) ->
+    Dev = binary_to_list(devname(Ref)),
+    {ok, MTU} = inet:ifget(Dev, [mtu]),
+    proplists:get_value(mtu, MTU).
+
+mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
+    gen_server:call(Ref, {mtu, MTU}).
+
 read(Ref, Len) when is_pid(Ref), is_integer(Len) ->
     gen_server:call(Ref, {read, Len}).
 
@@ -177,6 +186,9 @@ handle_call({up, IP}, _From, #state{dev = Dev} = State) ->
 handle_call(down, _From, #state{dev = Dev} = State) ->
     Reply = ifdown(Dev),
     {reply, Reply, State};
+
+handle_call({mtu, _MTU}, _From, #state{dev = _Dev} = State) ->
+    {reply, {error, unsupported}, State};
 
 handle_call(destroy, _From, State) ->
     {stop, normal, ok, State}.
