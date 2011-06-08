@@ -1,0 +1,10 @@
+{application, tunctl,
+    [
+    {description, "TUN/TAP interface"},
+    {vsn, "0.01"},
+    {modules, [
+        tunctl,
+        tuncer
+            ]}
+    ]}.
+

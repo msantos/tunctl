@@ -2,7 +2,29 @@
 tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 
+## PRIVILEGES
+
+On Linux, beam will need to have privileges to configure interfaces.
+
+To add cap_net_admin capabilities:
+
+     sudo setcap cap_net_admin=ep /path/to/bin/beam # or beam.smp
+
+To check the privileges:
+
+     getcap cap_net_admin=ep /path/to/bin/beam # or beam.smp
+
+To remove the privileges
+
+     sudo setcap -r cap_net_admin=ep /path/to/bin/beam # or beam.smp
+
+
 ## EXPORTS
+
+### tuncer
+
+Tuncer is a stand up guy and just like him, tuncer has your back,
+cleaning up after you.
 
     create() -> {ok, PID}
     create(Device) -> {ok, PID}
@@ -93,27 +115,65 @@ tunctl is an Erlang API for creating and using TUN/TAP interfaces.
     
         Returns an integer holding the interface creation flags.
 
+### tunctl
+
+tunctl does the actual tun/tap device manipulation. Some functions take
+a device name, others a file descriptor. It is up to the caller to make
+sure the file descriptors are closed (theoretically, the device will
+disappear after the fd is closed if the device is not persistent).
+
+    create() -> {ok, FD, Device}
+    create(Ifname) -> {ok, FD, Device}
+    create(Ifname, Flags) -> {ok, FD, Device}
+
+        Types   FD = integer()
+                Device = binary()
+                Flags = list()
+
+    peristFD, Bool) -> ok | {error, posix()}
+
+        Types   FD = integer()
+                Bool = true | false
+
+    owner(FD, UID) -> ok | {error, posix()}
+
+        Types   FD = integer()
+                UID = integer()
+
+    group(FD, GID) -> ok | {error, posix()}
+
+        Types   FD = integer()
+                UID = integer()
+
+    up(Device, IPv4Address) -> ok
+
+        Types   Device = binary()
+                IPv$Address = tuple()
+
+    down(Device) -> ok
+
+        Types   Device = binary()
 
 
 ## EXAMPLES
 
-    1> {ok, Ref} = tunctl:create()
+    1> {ok, Ref} = tuncer:create().
     {ok,<0.34.0>}
 
-    2> tunctl:devname(Ref).
+    2> tuncer:devname(Ref).
     <<"tap0">>
 
-    3> tunctl:up(Ref, "192.168.123.4").
+    3> tuncer:up(Ref, "192.168.123.4").
     ok
 
-    4> {ok, Buf} = tunctl:read(Ref, 1500).
+    4> {ok, Buf} = tuncer:read(Ref, 1500).
     {ok,<<1,0,94,0,0,22,190,138,20,22,76,120,8,0,70,192,0,40,
           0,0,64,0,1,2,200,76,192,...>>}
 
-    5> tunctl:read(Ref, Buf).
+    5> tuncer:read(Ref, Buf).
     ok
 
-    5> tunctl:destroy(Ref).
+    5> tuncer:destroy(Ref).
 
 ## TODO
 
@@ -121,15 +181,12 @@ tunctl is an Erlang API for creating and using TUN/TAP interfaces.
   CAP_NET_ADMIN privileges. Look at moving the interface creation into
   the procket setuid binary for OSes that use the multiplexing dev.
 
-      WORK AROUND:
-      setcap cap_net_admin=ep /path/to/bin/beam
-
 * compat for Mac OS X: uses /dev/tunN and /dev/tapN devices
 
 * compat for other BSDs: /dev/tun multiplex dev, probably the same issue
   with interface creation
 
-* make sure tunctl can never leak file descriptors
+* make sure tuncer can never leak file descriptors
 
 * the tun device is not removed even after the fd is closed
 
