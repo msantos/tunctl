@@ -1,3 +1,3 @@
 #!/bin/sh
 
-erl -pa deps/*/ebin ebin
+erl $@ -pa deps/*/ebin ebin
