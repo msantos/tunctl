@@ -4,7 +4,7 @@ tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 ## PRIVILEGES
 
-On Linux, beam will need to have privileges to configure interfaces.
+On Linux, beam needs to have privileges to configure interfaces.
 
 To add cap_net_admin capabilities:
 
@@ -195,3 +195,5 @@ disappear after the fd is closed if the device is not persistent).
 * add support for tun filtering
 
 * simple vpn client/server example
+
+* IPv6 addresses on tun devices
