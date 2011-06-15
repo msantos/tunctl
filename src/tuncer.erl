@@ -116,11 +116,11 @@ mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}).
 
 read(Ref, Len) when is_pid(Ref), is_integer(Len) ->
-    Fd = gen_server:call(Ref, fd),
+    Fd = fd(Ref),
     procket:read(Fd, Len).
 
 write(Ref, Data) when is_pid(Ref), is_binary(Data) ->
-    Fd = gen_server:call(Ref, fd),
+    Fd = fd(Ref),
     procket:write(Fd, Data).
 
 start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
