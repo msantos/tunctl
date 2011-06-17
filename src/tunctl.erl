@@ -170,8 +170,8 @@ get_flag(Socket, Dev) ->
     {ok, Flag}.
 
 
-bool(true) -> int_to_bin(1);
-bool(false) -> int_to_bin(0).
+bool(true) -> 1;
+bool(false) -> 0.
 
 int_to_bin(Int) ->
     <<Int:4/native-integer-unsigned-unit:8>>.
