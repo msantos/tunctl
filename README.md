@@ -74,53 +74,52 @@ cleaning up after you.
         Types   Ref = pid()
                 Boolean = [ true | false ]
     
-        Enable/disable interface persistence.
-    
+        Set the interface to exist after the Erlang process exits.
+
     owner(Ref, Owner) -> ok | {error, posix()}
-    
+
         Types   Ref = pid()
                 Owner = integer()
-    
+
         Set the uid owning the interface.
-    
+
     group(Ref, Group) -> ok | {error, posix()}
-    
+
         Types   Ref = pid()
                 Group = integer()
-    
+
         Set the gid owning the interface.
-    
+
     read(Ref, Size) -> {ok, Buf} | {error, posix()}
-    
+
         Types   Ref = pid()
-                Size = integer()
-                Buf = binary()
-    
+                Size = integer() Buf = binary()
+
         Read _Size_ bytes from the interface.
-    
+
     write(Ref, Buf) -> ok | {error, posix()}
-    
+
         Types   Ref = pid()
                 Buf = binary()
-    
+
         Write _Buf_ to the interface.
-    
+
     devname(Ref) -> Devname
-    
+
         Types   Devname = binary()
-    
+
         Returns the TUN/TAP device name.
-    
+
     flags(Ref) -> integer()
-    
+
         Returns an integer holding the interface creation flags.
 
 ### tunctl
 
 tunctl does the actual tun/tap device manipulation. Some functions take
 a device name, others a file descriptor. It is up to the caller to make
-sure the file descriptors are closed (theoretically, the device will
-disappear after the fd is closed if the device is not persistent).
+sure the file descriptors are closed (the device will disappear after
+the fd is closed if the device is not persistent).
 
     create() -> {ok, FD, Device}
     create(Ifname) -> {ok, FD, Device}
@@ -187,8 +186,6 @@ disappear after the fd is closed if the device is not persistent).
   with interface creation
 
 * make sure tuncer can never leak file descriptors
-
-* the tun device is not removed even after the fd is closed
 
 * add {active,true} mode using open_port/2
 
