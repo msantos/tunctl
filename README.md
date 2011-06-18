@@ -4,7 +4,9 @@ tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 ## PRIVILEGES
 
-On Linux, beam needs to have privileges to configure interfaces.
+### Linux
+
+beam needs to have privileges to configure interfaces.
 
 To add cap_net_admin capabilities:
 
@@ -17,6 +19,13 @@ To check the privileges:
 To remove the privileges
 
      sudo setcap -r cap_net_admin=ep /path/to/bin/beam # or beam.smp
+
+### Mac OS X
+
+Allow the user running tunctl to call ifconfig using sudo:
+
+    sudo visudo
+    youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
 
 
 ## EXPORTS
@@ -180,8 +189,6 @@ the fd is closed if the device is not persistent).
   CAP_NET_ADMIN privileges. Look at moving the interface creation into
   the procket setuid binary for OSes that use the multiplexing dev.
 
-* compat for Mac OS X: uses /dev/tunN and /dev/tapN devices
-
 * compat for other BSDs: /dev/tun multiplex dev, probably the same issue
   with interface creation
 
@@ -191,6 +198,6 @@ the fd is closed if the device is not persistent).
 
 * add support for tun filtering
 
-* simple vpn client/server example
+* support for setting pointopoint
 
 * IPv6 addresses on tun devices
