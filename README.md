@@ -22,6 +22,10 @@ To remove the privileges
 
 ### Mac OS X
 
+Requires the tun/tap driver from:
+
+<http://tuntaposx.sourceforge.net/>
+
 Allow the user running tunctl to call ifconfig using sudo:
 
     sudo visudo
