@@ -33,6 +33,10 @@
 -define(SIZEOF_UNSIGNED_INT, ?SIZEOF_INT).
 -define(UINT16, 2/native-unsigned-integer-unit:8).
 
+% ifconfig
+-define(IFF_RUNNING, 16#40).
+-define(IFF_UP, 16#01).
+
 % Ioctl defines
 -define(TUNSETNOCSUM, ?IOW($T, 200, ?SIZEOF_INT)).
 -define(TUNSETDEBUG, ?IOW($T, 201, ?SIZEOF_INT)).

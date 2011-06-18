@@ -47,9 +47,6 @@
 -define(SIZEOF_STRUCT_IFALIASREQ, 64).
 -define(SIOCAIFADDR, ?IOW($i, 26, ?SIZEOF_STRUCT_IFALIASREQ)).
 
--define(IFF_RUNNING, 16#40).
--define(IFF_UP, 16#01).
-
 
 %%--------------------------------------------------------------------
 %%% Exports

@@ -46,9 +46,6 @@
 -define(SIOCSIFFLAGS, 16#8914).
 -define(SIOCSIFADDR, 16#8916).
 
--define(IFF_RUNNING, 16#40).
--define(IFF_UP, 16#01).
-
 -define(TUNDEV, "net/tun").
 
 %%--------------------------------------------------------------------
