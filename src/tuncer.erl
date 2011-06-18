@@ -65,7 +65,7 @@
 %%% Exports
 %%--------------------------------------------------------------------
 create() ->
-    create(<<0:(15*8)>>).
+    create(<<>>).
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
 

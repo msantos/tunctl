@@ -31,6 +31,7 @@
 
 -define(SIZEOF_INT, 4).
 -define(SIZEOF_UNSIGNED_INT, ?SIZEOF_INT).
+-define(UINT16, 2/native-unsigned-integer-unit:8).
 
 % Ioctl defines
 -define(TUNSETNOCSUM, ?IOW($T, 200, ?SIZEOF_INT)).

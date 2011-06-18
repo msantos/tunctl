@@ -28,53 +28,63 @@
 %% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
--module(tunctl).
+-module(tunctl_linux).
 
 -include("tuntap.hrl").
 -include("ioctl.hrl").
 -include("procket.hrl").
 
 -export([
-        create/0, create/1, create/2,
+        create/2,
         persist/2,
         owner/2, group/2,
-        up/2, down/1,
-
-        header/1
-    ]).
--export([
-        ioctl/3
+        up/2, down/1
     ]).
 
+
+-define(SIOCGIFFLAGS, 16#8913).
+-define(SIOCSIFFLAGS, 16#8914).
+-define(SIOCSIFADDR, 16#8916).
+
+-define(IFF_RUNNING, 16#40).
+-define(IFF_UP, 16#01).
+
+-define(TUNDEV, "net/tun").
 
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
-create() ->
-    create(<<>>).
-create(Ifname) ->
-    create(Ifname, [tap, no_pi]).
-
+create(<<>>, Opt) ->
+    create(<<0:(15*8)>>, Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
-    Module = os(),
-    Module:create(Ifname, Opt).
+    {ok, FD} = procket:dev(?TUNDEV),
+    Flag = lists:foldl(fun(N, F) -> F bor flag(N) end, 0, Opt),
+    Result = procket:ioctl(FD, ?TUNSETIFF,
+        <<Ifname/binary, 0:((15*8) - (byte_size(Ifname)*8)), 0:8,   % ifrn_name[IFNAMSIZ]: interface name
+        Flag:2/native-signed-integer-unit:8,                        % ifru_flags
+        0:(14*8)>>),
+
+    case Result of
+        {ok, Dev} ->
+            {ok, FD, hd(binary:split(Dev, <<0>>))};
+        Error ->
+            ok = procket:close(FD),
+            Error
+    end.
 
 
 persist(FD, Status) ->
-    Module = os(),
-    Module:persist(FD, bool(Status)).
+    tunctl:ioctl(FD, ?TUNSETPERSIST, Status).
 
 
 %%
 %% Change the owner/group of the tun device
 %%
 owner(FD, Owner) when is_integer(FD), is_integer(Owner) ->
-    Module = os(),
-    Module:owner(FD, Owner).
+    tunctl:ioctl(FD, ?TUNSETOWNER, int_to_bin(Owner)).
 
 group(FD, Group) when is_integer(FD), is_integer(Group) ->
-    Module = os(),
-    Module:owner(FD, Group).
+    tunctl:ioctl(FD, ?TUNSETGROUP, int_to_bin(Group)).
 
 
 %%
@@ -82,33 +92,65 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
 %% with fewer features and no error checking
 %%
 up(Dev, {A,B,C,D}) when byte_size(Dev) < ?IFNAMSIZ ->
-    Module = os(),
-    Module:up(Dev, {A,B,C,D}).
+    {ok, Socket} = procket:socket(inet, dgram,  0),
+
+    % struct sockaddr_in
+    % dev[IFNAMSIZ], family:2 bytes, port:2 bytes, ipaddr:4 bytes
+    Ifr = <<Dev/bytes, 0:( (?IFNAMSIZ - byte_size(Dev) - 1)*8), 0:8,
+        ?PF_INET:16/native, 0:16, A:8, B:8, C:8, D:8, 0:(8*8)>>,
+
+    Res = try ok = tunctl:ioctl(Socket, ?SIOCSIFADDR, Ifr),
+        {ok, Flag} = get_flag(Socket, Dev),
+        ok = set_flag(Socket, Dev, Flag bor ?IFF_RUNNING bor ?IFF_UP) of
+        _ -> ok
+    catch
+        error:Error ->
+            Error
+    end,
+
+    ok = procket:close(Socket),
+    Res.
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
-    Module = os(),
-    Module:down(Dev).
+    {ok, Socket} = procket:socket(inet, dgram,  0),
 
+    Res = try {ok, Flags} = get_flag(Socket, Dev),
+        ok = set_flag(Socket, Dev, Flags band bnot(?IFF_UP)) of
+        _ -> ok
+    catch
+        error:Error ->
+            Error
+    end,
 
-header(<<Flags:?UINT16, Proto:?UINT16, Buf/binary>>) ->
-    {tun_pi, Flags, Proto, Buf}.
+    ok = procket:close(Socket),
+    Res.
 
 
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-ioctl(FD, Request, Opt) ->
-    case procket:ioctl(FD, Request, Opt) of
-        {ok, _} -> ok;
-        Error -> Error
-    end.
 
-bool(true) -> 1;
-bool(false) -> 0.
+%%
+%% tun/tap options
+%%
+flag(tun) -> ?IFF_TUN;
+flag(tap) -> ?IFF_TAP;
+flag(no_pi) -> ?IFF_NO_PI;
+flag(one_queue) -> ?IFF_ONE_QUEUE;
+flag(vnet_hdr) -> ?IFF_VNET_HDR;
+flag(tun_excl) -> ?IFF_TUN_EXCL.
 
-os() ->
-    case os:type() of
-        {unix, linux} -> tunctl_linux;
-        {unix, darwin} -> tunctl_darwin;
-        {unix, _} -> throw({error, unsupported})
-    end.
+set_flag(FD, Dev, Flag) ->
+    tunctl:ioctl(FD, ?SIOCSIFFLAGS,
+        <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:8,
+        Flag:2/native-signed-integer-unit:8,
+        0:(14*8)>>).
+get_flag(FD, Dev) ->
+    {ok, <<_:(16*8), Flag:2/native-signed-integer-unit:8, _/binary>>} = procket:ioctl(
+        FD, ?SIOCGIFFLAGS, <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:(16*8)>>
+    ),
+    {ok, Flag}.
+
+
+int_to_bin(Int) ->
+    <<Int:4/native-integer-unsigned-unit:8>>.
