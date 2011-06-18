@@ -41,6 +41,8 @@
         up/2, down/1
     ]).
 
+-define(TUNSIFHEAD, ?IOW($t, 96, ?SIZEOF_INT)).
+-define(TUNGIFHEAD, ?IOR($t, 97, ?SIZEOF_INT)).
 
 -define(SIZEOF_STRUCT_IFALIASREQ, 64).
 -define(SIOCAIFADDR, ?IOW($i, 26, ?SIZEOF_STRUCT_IFALIASREQ)).
@@ -56,8 +58,16 @@ create(<<>>, Opt) ->
     create(<<"tap0">>, Opt);
 
 %% Ignore the options for now
-create(Ifname, _Opt) when byte_size(Ifname) < ?IFNAMSIZ ->
+create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     {ok, FD} = procket:dev(binary_to_list(Ifname)),
+
+    case proplists:get_bool(tap_pi, Opt) of
+        true ->
+            ok = tunctl:ioctl(FD, ?TUNSIFHEAD, 1);
+        false ->
+            ok
+    end,
+
     {ok, FD, Ifname}.
 
 
