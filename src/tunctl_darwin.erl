@@ -52,14 +52,6 @@
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
-
-%% Explicitly specify the device name: procket_cmd doesn't return
-%% the name of the device and will try each numbered device until
-%% it succeeds or no devices are left.
-%%
-%% As a consequence, if the caller specifies "tap1" and that is busy,
-%% they may accidentally open "tap11" (TODO: procket_cmd should have an
-%% option for exact name matches).
 create(<<>>, Opt) ->
     create(<<"tap0">>, Opt);
 
