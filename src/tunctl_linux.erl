@@ -54,13 +54,21 @@
 create(<<>>, Opt) ->
     create(<<0:(15*8)>>, Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
-    {ok, FD} = procket:dev(?TUNDEV),
-    Flag = lists:foldl(fun(N, F) -> F bor flag(N) end, 0, Opt),
-    Result = procket:ioctl(FD, ?TUNSETIFF,
-        <<Ifname/binary, 0:((15*8) - (byte_size(Ifname)*8)), 0:8,   % ifrn_name[IFNAMSIZ]: interface name
-        Flag:2/native-signed-integer-unit:8,                        % ifru_flags
-        0:(14*8)>>),
+    case procket:dev(?TUNDEV) of
+        {ok, FD} ->
+            create_1(FD, Ifname, Opt);
+        Error ->
+            Error
+    end.
 
+create_1(FD, Ifname, Opt) ->
+    Flag = lists:foldl(fun(N, F) -> F bor flag(N) end, 0, Opt),
+    Result = procket:ioctl(FD, ?TUNSETIFF, <<
+        Ifname/binary,
+        0:((15*8) - (byte_size(Ifname)*8)), 0:8,    % ifrn_name[IFNAMSIZ]: interface name
+        Flag:2/native-signed-integer-unit:8,        % ifru_flags
+        0:(14*8)
+    >>),
     case Result of
         {ok, Dev} ->
             {ok, FD, hd(binary:split(Dev, <<0>>))};

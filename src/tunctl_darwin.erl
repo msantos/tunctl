@@ -56,15 +56,20 @@ create(<<>>, Opt) ->
 
 %% Ignore the options for now
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
-    {ok, FD} = procket:dev(binary_to_list(Ifname)),
+    case procket:dev(binary_to_list(Ifname)) of
+        {ok, FD} ->
+            create_1(FD, Ifname, Opt);
+        Error ->
+            Error
+    end.
 
+create_1(FD, Ifname, Opt) ->
     case proplists:get_bool(tap_pi, Opt) of
         true ->
             ok = tunctl:ioctl(FD, ?TUNSIFHEAD, 1);
         false ->
             ok
     end,
-
     {ok, FD, Ifname}.
 
 
