@@ -33,7 +33,7 @@ Allow the user running tunctl to call ifconfig using sudo:
 
 ### FreeBSD
 
-tunctl uses the FreeBSD tuntap legacy interface. 
+tunctl uses the FreeBSD tuntap legacy interface.
 
 1. Ensure the tap device kernel module is loaded:
 
@@ -49,7 +49,7 @@ tunctl uses the FreeBSD tuntap legacy interface.
     $ sysctl net.link.tun.devfs_cloning
     net.link.tun.devfs_cloning: 1
 
-    $ sysctl net.link.tap.devfs_cloning 
+    $ sysctl net.link.tap.devfs_cloning
     net.link.tap.devfs_cloning: 1
 
 3. Allow the user running tunctl to call ifconfig using sudo:
@@ -216,9 +216,6 @@ the fd is closed if the device is not persistent).
 * on Linux, the TUNSETIFF ioctl request to create the interface requires
   CAP\_NET\_ADMIN privileges. Look at moving the interface creation into
   the procket setuid binary for OSes that use the multiplexing dev.
-
-* compat for other BSDs: /dev/tun multiplex dev, probably the same issue
-  with interface creation
 
 * make sure tuncer can never leak file descriptors
 
