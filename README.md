@@ -8,7 +8,7 @@ tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 beam needs to have privileges to configure interfaces.
 
-To add cap_net_admin capabilities:
+To add cap\_net\_admin capabilities:
 
      sudo setcap cap_net_admin=ep /path/to/bin/beam # or beam.smp
 
@@ -27,6 +27,32 @@ Requires the tun/tap driver from:
 <http://tuntaposx.sourceforge.net/>
 
 Allow the user running tunctl to call ifconfig using sudo:
+
+    sudo visudo
+    youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
+
+### FreeBSD
+
+tunctl uses the FreeBSD tuntap legacy interface. 
+
+1. Ensure the tap device kernel module is loaded:
+
+	$ kldstat
+	$ kldload if_tap
+
+    If you want the tap driver loaded on boot, add to /boot/loader.conf:
+
+    if_tap_load="YES"
+
+2. Check cloning is enabled:
+
+    $ sysctl net.link.tun.devfs_cloning
+    net.link.tun.devfs_cloning: 1
+
+    $ sysctl net.link.tap.devfs_cloning 
+    net.link.tap.devfs_cloning: 1
+
+3. Allow the user running tunctl to call ifconfig using sudo:
 
     sudo visudo
     youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
@@ -160,7 +186,7 @@ the fd is closed if the device is not persistent).
     up(Device, IPv4Address) -> ok
 
         Types   Device = binary()
-                IPv$Address = tuple()
+                IPv4Address = tuple()
 
     down(Device) -> ok
 
@@ -188,7 +214,7 @@ the fd is closed if the device is not persistent).
 ## TODO
 
 * on Linux, the TUNSETIFF ioctl request to create the interface requires
-  CAP_NET_ADMIN privileges. Look at moving the interface creation into
+  CAP\_NET\_ADMIN privileges. Look at moving the interface creation into
   the procket setuid binary for OSes that use the multiplexing dev.
 
 * compat for other BSDs: /dev/tun multiplex dev, probably the same issue
@@ -196,7 +222,7 @@ the fd is closed if the device is not persistent).
 
 * make sure tuncer can never leak file descriptors
 
-* add {active,true} mode using open_port/2
+* add {active,true} mode using open\_port/2
 
 * add support for tun filtering
 
