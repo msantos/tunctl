@@ -142,7 +142,7 @@ the fd is closed if the device is not persistent).
                 Device = binary()
                 Flags = list()
 
-    peristFD, Bool) -> ok | {error, posix()}
+    persist(FD, Bool) -> ok | {error, posix()}
 
         Types   FD = integer()
                 Bool = true | false
@@ -182,10 +182,8 @@ the fd is closed if the device is not persistent).
     {ok,<<1,0,94,0,0,22,190,138,20,22,76,120,8,0,70,192,0,40,
           0,0,64,0,1,2,200,76,192,...>>}
 
-    5> tuncer:read(Ref, Buf).
-    ok
-
     5> tuncer:destroy(Ref).
+    ok
 
 ## TODO
 
