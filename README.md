@@ -37,25 +37,25 @@ tunctl uses the FreeBSD tuntap legacy interface.
 
 1. Ensure the tap device kernel module is loaded:
 
-	$ kldstat
-	$ kldload if_tap
+	    $ kldstat
+	    $ kldload if_tap
 
     If you want the tap driver loaded on boot, add to /boot/loader.conf:
 
-    if_tap_load="YES"
+        if_tap_load="YES"
 
 2. Check cloning is enabled:
 
-    $ sysctl net.link.tun.devfs_cloning
-    net.link.tun.devfs_cloning: 1
+        $ sysctl net.link.tun.devfs_cloning
+        net.link.tun.devfs_cloning: 1
 
-    $ sysctl net.link.tap.devfs_cloning
-    net.link.tap.devfs_cloning: 1
+        $ sysctl net.link.tap.devfs_cloning
+        net.link.tap.devfs_cloning: 1
 
 3. Allow the user running tunctl to call ifconfig using sudo:
 
-    sudo visudo
-    youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
+        sudo visudo
+        youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
 
 
 ## EXPORTS
@@ -218,8 +218,6 @@ the fd is closed if the device is not persistent).
   the procket setuid binary for OSes that use the multiplexing dev.
 
 * make sure tuncer can never leak file descriptors
-
-* add {active,true} mode using open\_port/2
 
 * add support for tun filtering
 
