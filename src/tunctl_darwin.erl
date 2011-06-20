@@ -64,11 +64,11 @@ create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     end.
 
 create_1(FD, Ifname, Opt) ->
-    case proplists:get_bool(tap_pi, Opt) of
+    case proplists:get_bool(no_pi, Opt) of
         true ->
-            ok = tunctl:ioctl(FD, ?TUNSIFHEAD, 1);
+            ok;
         false ->
-            ok
+            ok = tunctl:ioctl(FD, ?TUNSIFHEAD, 1)
     end,
     {ok, FD, Ifname}.
 
