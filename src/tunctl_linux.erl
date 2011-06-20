@@ -143,7 +143,8 @@ flag(tap) -> ?IFF_TAP;
 flag(no_pi) -> ?IFF_NO_PI;
 flag(one_queue) -> ?IFF_ONE_QUEUE;
 flag(vnet_hdr) -> ?IFF_VNET_HDR;
-flag(tun_excl) -> ?IFF_TUN_EXCL.
+flag(tun_excl) -> ?IFF_TUN_EXCL;
+flag(_) -> 0.
 
 set_flag(FD, Dev, Flag) ->
     tunctl:ioctl(FD, ?SIOCSIFFLAGS,
