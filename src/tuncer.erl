@@ -45,7 +45,9 @@
         header/1,
 
         up/2, down/1,
-        mtu/1, mtu/2
+        mtu/1, mtu/2,
+
+        controlling_process/2
     ]).
 
 -export([start_link/2]).
@@ -53,6 +55,8 @@
         terminate/2, code_change/3]).
 
 -record(state, {
+        port,       % false, port
+        pid,        % PID of controlling process
         fd,         % TUN/TAP file descriptor
         dev,        % device name
         flag        % TUNSETIFF ifr flags
@@ -123,19 +127,37 @@ write(Ref, Data) when is_pid(Ref), is_binary(Data) ->
     Fd = fd(Ref),
     procket:write(Fd, Data).
 
+% FIXME: race condition: events can be delivered out of order
+controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
+    flush_events(Ref, Pid),
+    gen_server:call(Ref, {controlling_process, Pid}),
+    flush_events(Ref, Pid).
+
 start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
-    gen_server:start_link(?MODULE, [Ifname, Opt], []).
+    Pid = self(),
+    gen_server:start_link(?MODULE, [Pid, Ifname, Opt], []).
 
 
 %%--------------------------------------------------------------------
 %%% Callbacks
 %%--------------------------------------------------------------------
-init([Ifname, Flag]) ->
+init([Pid, Ifname, Flag]) ->
     process_flag(trap_exit, true),
+
     % if Dev is NULL, the tuntap driver will choose an
     % interface name
     {ok, FD, Dev} = tunctl:create(Ifname, Flag),
+
+    Active = proplists:get_value(active, Flag, false),
+
+    Port = case Active of
+        true -> set_active(FD);
+        false -> false
+    end,
+
     {ok, #state{
+            port = Port,
+            pid = Pid,
             fd = FD,
             dev = Dev,
             flag = Flag
@@ -143,7 +165,7 @@ init([Ifname, Flag]) ->
 
 
 %%
-%% retrieve gen_server state
+%% retrieve/modify gen_server state
 %%
 handle_call(devname, _From, #state{dev = Dev} = State) ->
     {reply, Dev, State};
@@ -153,6 +175,9 @@ handle_call(flags, _From, #state{flag = Flag} = State) ->
 
 handle_call(fd, _From, #state{fd = FD} = State) ->
     {reply, FD, State};
+
+handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) ->
+    {reply, ok, State#state{pid = Pid}};
 
 
 %%
@@ -187,16 +212,38 @@ handle_call(destroy, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
+%%
+%% {active, true} mode
+%%
+handle_info({Port, {data, Data}}, #state{port = Port, pid = Pid} = State) ->
+    Pid ! {tuntap, self(), Data},
+    {noreply, State};
+
 % WTF?
 handle_info(Info, State) ->
     error_logger:error_report([wtf, Info]),
     {noreply, State}.
 
 terminate(_Reason, #state{fd = FD, dev = Dev}) ->
-    ok = tunctl:down(Dev),
-    ok = tunctl:persist(FD, false),
-    ok = procket:close(FD),
+    tunctl:down(Dev),
+    tunctl:persist(FD, false),
+    procket:close(FD),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+%%--------------------------------------------------------------------
+%%% Internal functions
+%%--------------------------------------------------------------------
+set_active(FD) ->
+    open_port({fd, FD, FD}, [stream, binary]).
+
+flush_events(Ref, Pid) ->
+    receive
+        {tuntap, Ref, _} = Event ->
+            Pid ! Event,
+            flush_events(Ref, Pid)
+    after
+        0 -> ok
+    end.
