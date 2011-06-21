@@ -41,16 +41,17 @@
         create/2,
         persist/2,
         owner/2, group/2,
-        up/2, down/1
+        up/2, down/1,
+
+        header/1
     ]).
 
 
 -define(SIZEOF_STRUCT_IFALIASREQ, 64).
 -define(SIOCAIFADDR, ?IOW($i, 26, ?SIZEOF_STRUCT_IFALIASREQ)).
 
--define(TAPGIFNAME, ?IOR('t', 93, ?SIZEOF_STRUCT_IFREQ)).
-
--define(TUNDEV, "tap").
+-define(TAPGIFNAME, ?IOR($t, 93, ?SIZEOF_STRUCT_IFREQ)).
+-define(TUNSIFHEAD, ?IOW($t, 96, ?SIZEOF_INT)).
 
 
 %%--------------------------------------------------------------------
@@ -60,13 +61,23 @@ create(<<>>, Opt) ->
     create(<<"tap0">>, Opt);
 
 %% Ignore the options for now
-create(Ifname, _Opt) when byte_size(Ifname) < ?IFNAMSIZ ->
+create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ ->
     case procket:dev(binary_to_list(Ifname)) of
         {ok, FD} ->
-            {ok, FD, Ifname};
+            create_1(FD, Ifname, Opt);
         Error ->
             Error
     end.
+
+create_1(FD, Ifname, Opt) ->
+    case {Ifname, proplists:get_bool(no_pi, Opt)} of
+        {<<"tun", _/binary>>, false} ->
+            ok = tunctl:ioctl(FD, ?TUNSIFHEAD, 1);
+        _ ->
+            % TUNSIFHEAD isn't supported by tap devices
+            ok
+    end,
+    {ok, FD, Ifname}.
 
 
 %% N/A
@@ -96,6 +107,10 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
         [] -> ok;
         Error -> Error
     end.
+
+
+header(<<Proto:?UINT32, Buf/binary>>) ->
+    {tun_pi, 0, Proto, Buf}.
 
 
 %%--------------------------------------------------------------------

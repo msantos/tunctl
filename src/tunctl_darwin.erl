@@ -38,7 +38,9 @@
         create/2,
         persist/2,
         owner/2, group/2,
-        up/2, down/1
+        up/2, down/1,
+
+        header/1
     ]).
 
 -define(TUNSIFHEAD, ?IOW($t, 96, ?SIZEOF_INT)).
@@ -100,6 +102,10 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
         [] -> ok;
         Error -> Error
     end.
+
+
+header(<<Proto:?UINT32, Buf/binary>>) ->
+    {tun_pi, 0, Proto, Buf}.
 
 
 %%--------------------------------------------------------------------

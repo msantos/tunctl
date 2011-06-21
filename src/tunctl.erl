@@ -90,8 +90,9 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     Module:down(Dev).
 
 
-header(<<Flags:?UINT16, Proto:?UINT16, Buf/binary>>) ->
-    {tun_pi, Flags, Proto, Buf}.
+header(Packet) ->
+    Module = os(),
+    Module:header(Packet).
 
 
 %%--------------------------------------------------------------------

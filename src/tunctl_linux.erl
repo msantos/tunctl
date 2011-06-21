@@ -38,7 +38,9 @@
         create/2,
         persist/2,
         owner/2, group/2,
-        up/2, down/1
+        up/2, down/1,
+
+        header/1
     ]).
 
 
@@ -129,6 +131,10 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
 
     ok = procket:close(Socket),
     Res.
+
+
+header(<<Flags:?UINT16, Proto:?UINT16, Buf/binary>>) ->
+    {tun_pi, Flags, Proto, Buf}.
 
 
 %%--------------------------------------------------------------------
