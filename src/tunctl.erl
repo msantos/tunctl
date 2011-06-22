@@ -140,7 +140,7 @@ os_up(Dev, {A,B,C,D}, Mask) ->
         Error -> {error, Error}
     end;
 os_up(Dev, {A,B,C,D,E,F,G,H}, Mask) ->
-    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " inet6 add" ++
+    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " inet6 add " ++
     inet_parse:ntoa({A,B,C,D,E,F,G,H}) ++
     "/" ++ integer_to_list(Mask) ++ " up",
     case os:cmd(Cmd) of
