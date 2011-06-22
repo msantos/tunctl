@@ -29,7 +29,8 @@ Requires the tun/tap driver from:
 Allow the user running tunctl to call ifconfig using sudo:
 
     sudo visudo
-    youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
+    youruser ALL=NOPASSWD: /sbin/ifconfig tap*
+    youruser ALL=NOPASSWD: /sbin/ifconfig tun*
 
 ### FreeBSD
 
@@ -55,7 +56,8 @@ tunctl uses the FreeBSD tuntap legacy interface.
 3. Allow the user running tunctl to call ifconfig using sudo:
 
         sudo visudo
-        youruser ALL=NOPASSWD: /sbin/ifconfig tap0 *
+        youruser ALL=NOPASSWD: /sbin/ifconfig tap*
+        youruser ALL=NOPASSWD: /sbin/ifconfig tun*
 
 
 ## EXPORTS
