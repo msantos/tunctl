@@ -213,14 +213,18 @@ the fd is closed if the device is not persistent).
 
 ## TODO
 
-* on Linux, the TUNSETIFF ioctl request to create the interface requires
-  CAP\_NET\_ADMIN privileges. Look at moving the interface creation into
-  the procket setuid binary for OSes that use the multiplexing dev.
+* Linux:
+    * the TUNSETIFF ioctl request to create the interface requires
+      CAP\_NET\_ADMIN privileges. Look at moving the interface creation
+      into the procket setuid binary for OSes that use the multiplexing
+      dev.
+
+    * support setting IPv6 address using ioctl
+
+    * support setting netmask using ioctl
+
+    * add support for tun filtering
 
 * make sure tuncer can never leak file descriptors
 
-* add support for tun filtering
-
 * support for setting pointopoint
-
-* IPv6 addresses on tun devices

@@ -38,7 +38,7 @@
         create/2,
         persist/2,
         owner/2, group/2,
-        up/2, down/1,
+        up/3, down/1,
 
         header/1
     ]).
@@ -96,9 +96,11 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
 
 %%
 %% Configure the interface just like ifconfig except
-%% with fewer features and no error checking
+%% with fewer features and no error checking.
 %%
-up(Dev, {A,B,C,D}) when byte_size(Dev) < ?IFNAMSIZ ->
+%% Also, we ignore the mask.
+%%
+up(Dev, {A,B,C,D}, _Mask) when byte_size(Dev) < ?IFNAMSIZ ->
     {ok, Socket} = procket:socket(inet, dgram,  0),
 
     % struct sockaddr_in
