@@ -37,8 +37,7 @@
 -export([
         create/2,
         persist/2,
-        owner/2, group/2,
-        up/2, down/1
+        owner/2, group/2
     ]).
 
 -define(TUNSIFHEAD, ?IOW($t, 96, ?SIZEOF_INT)).
@@ -82,24 +81,6 @@ owner(_FD, _Owner) ->
 
 group(__FD, _Group) ->
     ok.
-
-
-%% Calling SIOCAIFADDR requires beam runs with root
-%% privs. For now, shell out to ifconfig.
-up(Dev, {A,B,C,D}) ->
-    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " " ++
-        inet_parse:ntoa({A,B,C,D}) ++ " up",
-    case os:cmd(Cmd) of
-        [] -> ok;
-        Error -> Error
-    end.
-
-down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
-    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " down",
-    case os:cmd(Cmd) of
-        [] -> ok;
-        Error -> Error
-    end.
 
 
 %%--------------------------------------------------------------------

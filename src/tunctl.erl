@@ -81,13 +81,26 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
 %% Configure the interface just like ifconfig except
 %% with fewer features and no error checking
 %%
-up(Dev, {A,B,C,D}) when byte_size(Dev) < ?IFNAMSIZ ->
+up(Dev, {A,B,C,D}) ->
+    up(Dev, {A,B,C,D}, 24);
+up(Dev, {A,B,C,D,E,F,G,H}) ->
+    up(Dev, {A,B,C,D,E,F,G,H}, 64).
+
+up(Dev, {A,B,C,D}, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
     Module = os(),
-    Module:up(Dev, {A,B,C,D}).
+    case Module of
+        tunctl_linux -> tunctl_linux:up(Dev, {A,B,C,D}, Mask);
+        _ -> os_up(Dev, {A,B,C,D}, Mask)
+    end;
+up(Dev, {A,B,C,D,E,F,G,H}, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
+    os_up(Dev, {A,B,C,D,E,F,G,H}, Mask).
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     Module = os(),
-    Module:down(Dev).
+    case Module of
+        tunctl_linux -> tunctl_linux:down(Dev);
+        _ -> os_down(Dev)
+    end.
 
 
 header(<<Flags:?UINT16, Proto:?UINT16, Buf/binary>>) ->
@@ -112,4 +125,31 @@ os() ->
         {unix, darwin} -> tunctl_darwin;
         {unix, freebsd} -> tunctl_freebsd;
         {unix, _} -> throw({error, unsupported})
+    end.
+
+
+%% Shell out to ifconfig on systems where ioctl requires
+%% root privs (or native code hasn't been written yet).
+os_up(Dev, {A,B,C,D}, Mask) ->
+    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " " ++
+    inet_parse:ntoa({A,B,C,D}) ++
+    "/" ++ list_to_integer(Mask) ++ " up",
+    case os:cmd(Cmd) of
+        [] -> ok;
+        Error -> {error, Error}
+    end;
+os_up(Dev, {A,B,C,D,E,F,G,H}, Mask) ->
+    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " inet6 add" ++
+    inet_parse:ntoa({A,B,C,D,E,F,G,H}) ++
+    "/" ++ list_to_integer(Mask) ++ " up",
+    case os:cmd(Cmd) of
+        [] -> ok;
+        Error -> {error, Error}
+    end.
+
+os_down(Dev) ->
+    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " down",
+    case os:cmd(Cmd) of
+        [] -> ok;
+        Error -> {error, Error}
     end.
