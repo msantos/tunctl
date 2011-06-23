@@ -149,7 +149,35 @@ os_up(Dev, {A,B,C,D,E,F,G,H}, Mask) ->
     end.
 
 os_down(Dev) ->
+    % BSD systems don't destroy the interface so clean up
+    % any IPv6 addresses
+    os_ipv6_down(Dev),
+
     Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " down",
+    case os:cmd(Cmd) of
+        [] -> ok;
+        Error -> {error, Error}
+    end.
+
+os_ipv6_down(Dev) ->
+    case os:type() of
+        {unix, linux} -> ok;
+        {unix, BSD} when BSD == freebsd; BSD == darwin ->
+            os_ipv6_down_1(Dev)
+    end.
+
+os_ipv6_down_1(Ifname) ->
+    Dev = binary_to_list(Ifname),
+    {ok, Devs} = inet:getifaddrs(),
+    Attr = proplists:get_value(Dev, Devs),
+
+    [ os_ipv6_down_2(Dev, Addr) || Addr
+        <- proplists:get_all_values(addr, Attr),
+        tuple_size(Addr) == 8 ].
+
+os_ipv6_down_2(Dev, Addr) ->
+    Cmd = "sudo ifconfig " ++ Dev ++ " inet6 " ++
+        inet_parse:ntoa(Addr) ++ " -alias",
     case os:cmd(Cmd) of
         [] -> ok;
         Error -> {error, Error}
