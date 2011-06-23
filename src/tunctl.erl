@@ -43,7 +43,7 @@
         header/1
     ]).
 -export([
-        ioctl/3
+        ioctl/3, cmd/1
     ]).
 
 
@@ -117,6 +117,12 @@ ioctl(FD, Request, Opt) ->
         Error -> Error
     end.
 
+cmd(Cmd) ->
+    case os:cmd(Cmd) of
+        [] -> ok;
+        Error -> {error, Error}
+    end.
+
 bool(true) -> 1;
 bool(false) -> 0.
 
@@ -135,18 +141,12 @@ os_up(Dev, {A,B,C,D}, Mask) ->
     Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " " ++
     inet_parse:ntoa({A,B,C,D}) ++
     "/" ++ integer_to_list(Mask) ++ " up",
-    case os:cmd(Cmd) of
-        [] -> ok;
-        Error -> {error, Error}
-    end;
+    cmd(Cmd);
 os_up(Dev, {A,B,C,D,E,F,G,H}, Mask) ->
     Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " inet6 add " ++
     inet_parse:ntoa({A,B,C,D,E,F,G,H}) ++
     "/" ++ integer_to_list(Mask) ++ " up",
-    case os:cmd(Cmd) of
-        [] -> ok;
-        Error -> {error, Error}
-    end.
+    cmd(Cmd).
 
 os_down(Dev) ->
     % BSD systems don't destroy the interface so clean up
@@ -154,10 +154,7 @@ os_down(Dev) ->
     os_ipv6_down(Dev),
 
     Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " down",
-    case os:cmd(Cmd) of
-        [] -> ok;
-        Error -> {error, Error}
-    end.
+    cmd(Cmd).
 
 os_ipv6_down(Dev) ->
     case os:type() of
@@ -178,7 +175,4 @@ os_ipv6_down_1(Ifname) ->
 os_ipv6_down_2(Dev, Addr) ->
     Cmd = "sudo ifconfig " ++ Dev ++ " inet6 " ++
         inet_parse:ntoa(Addr) ++ " -alias",
-    case os:cmd(Cmd) of
-        [] -> ok;
-        Error -> {error, Error}
-    end.
+    cmd(Cmd).
