@@ -114,7 +114,7 @@ up(Dev, {A,B,C,D}, _Mask) when byte_size(Dev) < ?IFNAMSIZ ->
         _ -> ok
     catch
         error:Error ->
-            Error
+            {error, Error}
     end,
 
     ok = procket:close(Socket),
@@ -128,7 +128,7 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
         _ -> ok
     catch
         error:Error ->
-            Error
+            {error, Error}
     end,
 
     ok = procket:close(Socket),
