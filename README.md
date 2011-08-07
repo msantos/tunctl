@@ -6,7 +6,7 @@ tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 ### Linux
 
-beam needs to have privileges to configure interfaces.
+For IPv4 addresses, beam needs to have privileges to configure interfaces.
 
 To add cap\_net\_admin capabilities:
 
@@ -19,6 +19,9 @@ To check the privileges:
 To remove the privileges
 
      sudo setcap -r cap_net_admin=ep /path/to/bin/beam # or beam.smp
+
+Currently, IPv6 addresses are configured by calling ifconfig using sudo
+(see below).
 
 ### Mac OS X
 
@@ -64,8 +67,7 @@ tunctl uses the FreeBSD tuntap legacy interface.
 
 ### tuncer
 
-Tuncer is a stand up guy and just like him, tuncer has your back,
-cleaning up after you.
+Tuncer is a stand up guy and just like him, tuncer has your back.
 
     create() -> {ok, PID}
     create(Device) -> {ok, PID}
@@ -96,10 +98,12 @@ cleaning up after you.
     
         Remove the TUN/TAP interface.
     
-    up(Ref, IPv4) -> ok | {error, posix()}
+    up(Ref, IP) -> ok | {error, posix()}
     
         Types   Ref = pid()
+                IP = IPv4 | IPv6
                 IPv4 = list() | tuple()
+                IPv6 = list() | tuple()
     
         Configure a TUN/TAP interface using the default netmask and broadcast
         for the network.
@@ -115,6 +119,8 @@ cleaning up after you.
         Types   Ref = pid()
                 Boolean = [ true | false ]
     
+        (Linux only)
+
         Set the interface to exist after the Erlang process exits.
 
     owner(Ref, Owner) -> ok | {error, posix()}
@@ -122,12 +128,16 @@ cleaning up after you.
         Types   Ref = pid()
                 Owner = integer()
 
+        (Linux only)
+
         Set the uid owning the interface.
 
     group(Ref, Group) -> ok | {error, posix()}
 
         Types   Ref = pid()
                 Group = integer()
+
+        (Linux only)
 
         Set the gid owning the interface.
 
