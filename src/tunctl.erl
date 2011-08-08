@@ -74,7 +74,7 @@ owner(FD, Owner) when is_integer(FD), is_integer(Owner) ->
 
 group(FD, Group) when is_integer(FD), is_integer(Group) ->
     Module = os(),
-    Module:owner(FD, Group).
+    Module:group(FD, Group).
 
 
 %%
