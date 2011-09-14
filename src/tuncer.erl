@@ -40,7 +40,8 @@
         persist/2,
         owner/2, group/2,
 
-        read/2, write/2,
+        read/1, read/2,
+        write/2,
 
         header/1,
 
@@ -119,6 +120,8 @@ mtu(Ref) when is_pid(Ref) ->
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}).
 
+read(Ref) ->
+    read(Ref, 16#FFFF).
 read(Ref, Len) when is_pid(Ref), is_integer(Len) ->
     Fd = fd(Ref),
     procket:read(Fd, Len).

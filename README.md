@@ -141,6 +141,7 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Set the gid owning the interface.
 
+    read(Ref) -> {ok, Buf} | {error, posix()}
     read(Ref, Size) -> {ok, Buf} | {error, posix()}
 
         Types   Ref = pid()
