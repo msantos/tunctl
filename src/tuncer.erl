@@ -34,7 +34,7 @@
 
 -export([
         create/0, create/1, create/2,
-        devname/1, flags/1, fd/1,
+        devname/1, flags/1, getfd/1,
         destroy/1,
 
         persist/2,
@@ -42,6 +42,8 @@
 
         read/1, read/2,
         write/2,
+
+        send/2,
 
         header/1,
 
@@ -88,7 +90,7 @@ devname(Ref) when is_pid(Ref) ->
 flags(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, flags).
 
-fd(Ref) when is_pid(Ref) ->
+getfd(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, fd).
 
 destroy(Ref) when is_pid(Ref) ->
@@ -120,15 +122,16 @@ mtu(Ref) when is_pid(Ref) ->
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}).
 
-read(Ref) ->
-    read(Ref, 16#FFFF).
-read(Ref, Len) when is_pid(Ref), is_integer(Len) ->
-    Fd = fd(Ref),
+read(Fd) ->
+    read(Fd, 16#FFFF).
+read(Fd, Len) when is_integer(Fd), is_integer(Len) ->
     procket:read(Fd, Len).
 
-write(Ref, Data) when is_pid(Ref), is_binary(Data) ->
-    Fd = fd(Ref),
+write(Fd, Data) when is_integer(Fd), is_binary(Data) ->
     procket:write(Fd, Data).
+
+send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
+    gen_server:call(Ref, {send, Data}).
 
 % FIXME: race condition: events can be delivered out of order
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
@@ -186,6 +189,16 @@ handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) 
 %%
 %% manipulate the tun/tap device
 %%
+handle_call({send, Data}, _From, #state{port = Port} = State) ->
+    Reply = try erlang:port_command(Port, Data) of
+        true ->
+            ok
+    catch
+        error:Error ->
+            {error, Error}
+    end,
+    {reply, Reply, State};
+
 handle_call({persist, Status}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:persist(FD, Status),
     {reply, Reply, State};

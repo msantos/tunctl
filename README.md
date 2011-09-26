@@ -141,17 +141,25 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Set the gid owning the interface.
 
-    read(Ref) -> {ok, Buf} | {error, posix()}
-    read(Ref, Size) -> {ok, Buf} | {error, posix()}
+    getfd(Ref) -> integer()
 
         Types   Ref = pid()
+
+    Get the file descriptor associated with the process. Use getfd/1
+    with read/1,2 and write/2 to interact directly with the tuntap device
+    (bypassing the gen_server).
+
+    read(Fd) -> {ok, Buf} | {error, posix()}
+    read(Fd, Size) -> {ok, Buf} | {error, posix()}
+
+        Types   Fd = integer()
                 Size = integer() Buf = binary()
 
         Read _Size_ bytes from the interface.
 
-    write(Ref, Buf) -> ok | {error, posix()}
+    write(Fd, Buf) -> ok | {error, posix()}
 
-        Types   Ref = pid()
+        Types   Ref = integer()
                 Buf = binary()
 
         Write _Buf_ to the interface.

@@ -30,23 +30,22 @@
 %% POSSIBILITY OF SUCH DAMAGE.
 
 %%
-%% VPN over Erlang distribution protocol
+%% VPN over Erlang distribution protocol (active mode)
 %%
 %% Usage:
 %%  vpwn:start('node@vpn.example.com', {10,10,10,1}, {10,10,10,2}).
 %%
--module(vpwn).
+-module(vpwn_active).
 -export([start/3]).
 
 
 start(Node, SrcIP, DstIP) ->
     Pid = peer(Node, SrcIP, DstIP),
 
-    {ok, Dev} = tuncer:create(),
+    {ok, Dev} = tuncer:create("vpwn", [tap, no_pi, {active, true}]),
     ok = tuncer:up(Dev, SrcIP),
 
-    spawn_link(fun() -> read(Dev, Pid) end),
-    write(Dev).
+    proxy(Dev, Pid).
 
 % Parent
 peer(N, SrcIP, DstIP) when is_atom(N) ->
@@ -57,21 +56,14 @@ peer(N, SrcIP, DstIP) when is_atom(N) ->
 peer(N, _, _) when is_pid(N) ->
     N.
 
-read(Dev, Pid) ->
-    case tuncer:read(Dev, 16#FFFF) of
-        {error,eagain} ->
-            timer:sleep(10),
-            read(Dev, Pid);
-        {ok, Data} ->
-            Pid ! {vpwn, Data},
-            read(Dev, Pid)
-    end.
-
-write(Dev) ->
+proxy(Dev, Pid) ->
     receive
+        {tuntap, _Pid, Data} ->
+            Pid ! {vpwn, Data},
+            read(Dev, Pid);
         {vpwn, Data} ->
-            ok = tuncer:write(Dev, Data),
-            write(Dev);
+            ok = tuncer:send(Dev, Data),
+            read(Dev, Pid);
         Error ->
-            error_logger:error_report([{write_error, Error}])
+            Error
     end.
