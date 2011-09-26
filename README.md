@@ -241,3 +241,5 @@ the fd is closed if the device is not persistent).
 * make sure tuncer can never leak file descriptors
 
 * support for setting pointopoint
+
+* add support for {active, mode}

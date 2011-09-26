@@ -227,7 +227,13 @@ handle_info(Info, State) ->
     error_logger:error_report([wtf, Info]),
     {noreply, State}.
 
-terminate(_Reason, #state{fd = FD, dev = Dev}) ->
+terminate(_Reason, #state{fd = FD, dev = Dev, port = Port}) ->
+    if
+        is_port(Port) ->
+            catch erlang:port_close(Port);
+        true ->
+            ok
+    end,
     tunctl:down(Dev),
     tunctl:persist(FD, false),
     procket:close(FD),
