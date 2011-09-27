@@ -51,7 +51,7 @@ start(Node, SrcIP, DstIP) ->
 peer(N, SrcIP, DstIP) when is_atom(N) ->
     pong = net_adm:ping(N),
     Self = self(),
-    spawn_link(N, vpwn, start, [Self, DstIP, SrcIP]);
+    spawn_link(N, vpwn_active, start, [Self, DstIP, SrcIP]);
 % Child
 peer(N, _, _) when is_pid(N) ->
     N.
@@ -60,10 +60,10 @@ proxy(Dev, Pid) ->
     receive
         {tuntap, _Pid, Data} ->
             Pid ! {vpwn, Data},
-            read(Dev, Pid);
+            proxy(Dev, Pid);
         {vpwn, Data} ->
             ok = tuncer:send(Dev, Data),
-            read(Dev, Pid);
+            proxy(Dev, Pid);
         Error ->
             Error
     end.

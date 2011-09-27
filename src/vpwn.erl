@@ -44,9 +44,10 @@ start(Node, SrcIP, DstIP) ->
 
     {ok, Dev} = tuncer:create(),
     ok = tuncer:up(Dev, SrcIP),
+    FD = tuncer:getfd(Dev),
 
-    spawn_link(fun() -> read(Dev, Pid) end),
-    write(Dev).
+    spawn_link(fun() -> read(FD, Pid) end),
+    write(FD).
 
 % Parent
 peer(N, SrcIP, DstIP) when is_atom(N) ->
@@ -57,21 +58,21 @@ peer(N, SrcIP, DstIP) when is_atom(N) ->
 peer(N, _, _) when is_pid(N) ->
     N.
 
-read(Dev, Pid) ->
-    case tuncer:read(Dev, 16#FFFF) of
+read(FD, Pid) ->
+    case tuncer:read(FD, 16#FFFF) of
         {error,eagain} ->
             timer:sleep(10),
-            read(Dev, Pid);
+            read(FD, Pid);
         {ok, Data} ->
             Pid ! {vpwn, Data},
-            read(Dev, Pid)
+            read(FD, Pid)
     end.
 
-write(Dev) ->
+write(FD) ->
     receive
         {vpwn, Data} ->
-            ok = tuncer:write(Dev, Data),
-            write(Dev);
+            ok = tuncer:write(FD, Data),
+            write(FD);
         Error ->
             error_logger:error_report([{write_error, Error}])
     end.
