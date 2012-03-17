@@ -14,7 +14,7 @@ To add cap\_net\_admin capabilities:
 
 To check the privileges:
 
-     getcap cap_net_admin=ep /path/to/bin/beam # or beam.smp
+     getcap /path/to/bin/beam # or beam.smp
 
 To remove the privileges
 
