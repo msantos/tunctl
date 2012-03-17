@@ -1,4 +1,4 @@
-%% Copyright (c) 2011, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -30,10 +30,18 @@
 %% POSSIBILITY OF SUCH DAMAGE.
 
 %%
-%% VPN over Erlang distribution protocol (active mode)
+%% VPN over Erlang distribution protocol
 %%
 %% Usage:
-%%  vpwn:start('node@vpn.example.com', {10,10,10,1}, {10,10,10,2}).
+%%  node2: Start up Erlang on the destination node:
+%%
+%%      ./start.sh -setcookie OMNOMNOM -name node
+%%
+%%  node1: then on the source node:
+%%
+%%      ./start.sh -setcookie OMNOMNOM -name node
+%%
+%%      vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
 %%
 -module(vpwn_active).
 -export([start/3]).

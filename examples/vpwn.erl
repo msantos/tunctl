@@ -1,4 +1,4 @@
-%% Copyright (c) 2011, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -33,11 +33,24 @@
 %% VPN over Erlang distribution protocol
 %%
 %% Usage:
-%%  vpwn:start('node@vpn.example.com', {10,10,10,1}, {10,10,10,2}).
+%%  node2: Start up Erlang on the destination node:
+%%
+%%      ./start.sh -setcookie OMNOMNOM -name v
+%%
+%%  node1: then on the source node:
+%%
+%%      ./start.sh -setcookie OMNOMNOM -name v
+%%
+%%      vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
 %%
 -module(vpwn).
 -export([start/3]).
 
+
+start(Node, Src, Dst) when is_list(Src) ->
+    start(Node, inet_parse:address(Src), Dst);
+start(Node, Src, Dst) when is_list(Dst) ->
+    start(Node, Src, inet_parse:address(Dst));
 
 start(Node, SrcIP, DstIP) ->
     Pid = peer(Node, SrcIP, DstIP),

@@ -232,6 +232,33 @@ the fd is closed if the device is not persistent).
     5> tuncer:destroy(Ref).
     ok
 
+### vpwn
+
+vpwn will set up a point to point tunnel over the Erlang distribution
+protocol.
+
+Compile vpwn on the source and destination nodes:
+
+    erlc examples/*.erl
+
+Run Erlang on the destination node:
+
+    ./start.sh -setcookie OMNOMNOM -name node
+
+And on the source node:
+
+    ./start.sh -setcookie OMNOMNOM -name node
+
+Then start up the tunnel (replace the host name):
+
+    vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
+
+Then connect over the tunnel to the second node:
+
+    ping 10.10.10.2
+    ssh 10.10.10.2
+
+
 ## TODO
 
 * Linux:
