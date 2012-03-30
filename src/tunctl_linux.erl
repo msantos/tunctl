@@ -31,8 +31,8 @@
 -module(tunctl_linux).
 
 -include("tuntap.hrl").
--include("ioctl.hrl").
--include("procket.hrl").
+-include_lib("procket/include/ioctl.hrl").
+-include_lib("procket/include/procket.hrl").
 
 -export([
         create/2,

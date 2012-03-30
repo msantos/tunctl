@@ -91,7 +91,7 @@ flags(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, flags).
 
 getfd(Ref) when is_pid(Ref) ->
-    gen_server:call(Ref, fd).
+    gen_server:call(Ref, getfd).
 
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy).
@@ -179,7 +179,7 @@ handle_call(devname, _From, #state{dev = Dev} = State) ->
 handle_call(flags, _From, #state{flag = Flag} = State) ->
     {reply, Flag, State};
 
-handle_call(fd, _From, #state{fd = FD} = State) ->
+handle_call(getfd, _From, #state{fd = FD} = State) ->
     {reply, FD, State};
 
 handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) ->
