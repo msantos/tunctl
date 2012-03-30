@@ -1,4 +1,3 @@
-
 tunctl is an Erlang API for creating and using TUN/TAP interfaces.
 
 
@@ -239,7 +238,7 @@ protocol.
 
 Compile vpwn on the source and destination nodes:
 
-    erlc examples/*.erl
+    make examples
 
 Run Erlang on the destination node:
 
