@@ -71,53 +71,53 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
     create() -> {ok, PID}
     create(Device) -> {ok, PID}
     create(Device, Options) -> {ok, PID}
-    
+
         Types   Device = [ string() | binary() ]
                 Options = [ Flag ]
                 Flag = [ tun | tap | no_pi | one_queue | vnet_hdr | tun_excl ]
-    
+
         Device is the TUN/TAP interface name. If an interface name is not
         specified, the TUN/TAP driver will choose one (for tap devices,
         starting from "tap0"; for tun devices, beginning from "tun0").
-    
+
         Options contains a list of flags.
-    
+
             tun: create a tun interface
-    
+
             tap: create a tap interface
-    
+
             no_pi: do not prepend the data with a 4 byte header describing
                    the physical interface
-    
+
         The options default to [tap, no_pi].
-    
+
     destroy(Ref) -> ok
-    
+
         Types   Ref = pid()
-    
+
         Remove the TUN/TAP interface.
-    
+
     up(Ref, IP) -> ok | {error, posix()}
-    
+
         Types   Ref = pid()
                 IP = IPv4 | IPv6
                 IPv4 = list() | tuple()
                 IPv6 = list() | tuple()
-    
+
         Configure a TUN/TAP interface using the default netmask and broadcast
         for the network.
-    
+
     down(Ref) -> ok | {error, posix()}
-    
+
         Types   Ref = pid()
-    
+
         Unconfigure a TUN/TAP interface.
-    
+
     persist(Ref, Boolean) -> ok | {error, posix()}
-    
+
         Types   Ref = pid()
                 Boolean = [ true | false ]
-    
+
         (Linux only)
 
         Set the interface to exist after the Erlang process exits.
@@ -144,9 +144,9 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Types   Ref = pid()
 
-    Get the file descriptor associated with the process. Use getfd/1
-    with read/1,2 and write/2 to interact directly with the tuntap device
-    (bypassing the gen_server).
+        Get the file descriptor associated with the process. Use getfd/1
+        with read/1,2 and write/2 to interact directly with the tuntap device
+        (bypassing the gen_server).
 
     read(Fd) -> {ok, Buf} | {error, posix()}
     read(Fd, Size) -> {ok, Buf} | {error, posix()}
@@ -275,5 +275,3 @@ Then connect over the tunnel to the second node:
 * make sure tuncer can never leak file descriptors
 
 * support for setting pointopoint
-
-* add support for {active, mode}
