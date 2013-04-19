@@ -31,8 +31,8 @@
 
 -define(SIZEOF_INT, 4).
 -define(SIZEOF_UNSIGNED_INT, ?SIZEOF_INT).
--define(UINT16, 2/native-unsigned-integer-unit:8).
--define(UINT32, 4/native-unsigned-integer-unit:8).
+-define(UINT16(N), N:2/native-unsigned-integer-unit:8).
+-define(UINT32(N), N:4/native-unsigned-integer-unit:8).
 
 % ifconfig
 -define(IFF_RUNNING, 16#40).

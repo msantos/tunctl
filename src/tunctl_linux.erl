@@ -135,7 +135,7 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     Res.
 
 
-header(<<Flags:?UINT16, Proto:?UINT16, Buf/binary>>) ->
+header(<<?UINT16(Flags), ?UINT16(Proto), Buf/binary>>) ->
     {tun_pi, Flags, Proto, Buf}.
 
 

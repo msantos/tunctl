@@ -89,7 +89,7 @@ owner(_FD, _Owner) ->
 group(__FD, _Group) ->
     ok.
 
-header(<<Proto:?UINT32, Buf/binary>>) ->
+header(<<?UINT32(Proto), Buf/binary>>) ->
     {tun_pi, 0, Proto, Buf}.
 
 
