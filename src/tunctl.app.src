@@ -1,5 +1,5 @@
 {application, tunctl,
     [
     {description, "TUN/TAP interface"},
-    {vsn, "0.01"}
+    {vsn, "0.2.0"}
     ]}.

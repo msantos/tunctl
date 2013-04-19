@@ -15,7 +15,7 @@ To check the privileges:
 
      getcap /path/to/bin/beam # or beam.smp
 
-To remove the privileges
+To remove the privileges:
 
      sudo setcap -r cap_net_admin=ep /path/to/bin/beam # or beam.smp
 
