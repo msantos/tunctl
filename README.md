@@ -296,6 +296,52 @@ Then connect over the tunnel to the second node:
     ping 10.10.10.2
     ssh 10.10.10.2
 
+### Bridging
+
+`br` is an example of a simple bridge that floods frames to all the switch
+ports. `br` uses a tap device plugged into a Linux bridge as an
+uplink port and 1 or more tap devices as the switch ports.
+
+This example uses the tap devices as interfaces for Linux containers
+(LXC).
+
+* Create a bridge and attach the physical ethernet interface
+```
+# /etc/network/interfaces
+iface br0 inet dhcp
+    bridge_ports eth0
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+```
+
+* Start the bridge:
+
+    * `erlbr0` is the name of the tap device connected to the bridge
+    * `["erl0", "erl1", "erl2"]` are the tap devices used by the containers
+
+```
+br:start("erlbr0", ["erl0", "erl1", "erl2"]).
+```
+
+* In another shell, as root, bring up the uplink and attach it to the bridge:
+
+```
+# ifconfig erlbr0 up
+# brctl addif br0 erlbr0
+# brctl show br0
+bridge name     bridge id               STP enabled     interfaces
+br0             8000.4aec6d3a44d1       no              erlbr0
+                                                        eth0
+```
+
+* Move the switch port interface into the container. The interface name inside the container will be known as "erl0".
+
+```
+lxc.network.type=phys
+lxc.network.link=erl0
+lxc.network.flags=up
+```
 
 ## TODO
 
