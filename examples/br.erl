@@ -57,7 +57,7 @@ switch(Br, Dev) ->
         {tuntap, Port, Data} ->
             % Data received on port: flood to all other ports and uplink
             error_logger:info_report([{dev, Port}, {data, Data}]),
-            [ ok = tuncer:send(N, Data) || N <- Dev ++ [Br], N =/= Port ],
+            [ ok = tuncer:send(N, Data) || N <- [Br|Dev], N =/= Port ],
             switch(Br, Dev);
         Error ->
             error_logger:error_report([{error, Error}])
