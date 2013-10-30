@@ -80,6 +80,14 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
         specified, the TUN/TAP driver will choose one (for tap devices,
         starting from "tap0"; for tun devices, beginning from "tun0").
 
+        Data is sent as messages:
+
+            {tuntap, PID, binary()}
+
+        If an error is encountered:
+
+            {tuntap_error, PID, posix()}
+
         Options contains a list of flags.
 
             tun: create a tun interface

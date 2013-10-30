@@ -231,6 +231,13 @@ handle_cast(_Msg, State) ->
 %%
 %% {active, true} mode
 %%
+handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev = Dev} = State) ->
+    Pid ! {tuntap_error, self(), Error},
+    tunctl:down(Dev),
+    tunctl:persist(FD, false),
+    procket:close(FD),
+    {stop, normal, State};
+
 handle_info({Port, {data, Data}}, #state{port = Port, pid = Pid} = State) ->
     Pid ! {tuntap, self(), Data},
     {noreply, State};
