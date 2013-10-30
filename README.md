@@ -318,10 +318,10 @@ iface br0 inet dhcp
 * Start the bridge:
 
     * `erlbr0` is the name of the tap device connected to the bridge
-    * `["erl0", "erl1", "erl2"]` are the tap devices used by the containers
+    * `erl0, erl1, erl2` are the tap devices used by the containers
 
 ```
-br:start("erlbr0", ["erl0", "erl1", "erl2"]).
+br:start(["erlbr0", "erl0", "erl1", "erl2"]).
 ```
 
 * In another shell, as root, bring up the uplink and attach it to the bridge:

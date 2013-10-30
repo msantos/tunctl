@@ -29,36 +29,28 @@
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
 -module(br).
--export([start/0, start/2]).
+-export([start/0, start/1]).
 
 
 start() ->
-    start("erlbr0", ["erl0"]).
+    start(["erlbr0", "erl0"]).
 
-start(Uplink, Ifaces) ->
-    % Switch uplink
-    {ok, Br} = tuncer:create(Uplink, [tap, no_pi, {active, true}]),
-
+start(Ifaces) ->
     % Switch ports
     Dev = [ begin
         {ok, N} = tuncer:create(Iface, [tap, no_pi, {active, true}]),
         N
       end || Iface <- Ifaces ],
 
-    switch(Br, Dev).
+    switch(Dev).
 
-switch(Br, Dev) ->
+switch(Dev) ->
     receive
-        {tuntap, Br, Data} ->
-            % Data received on uplink: flood to ports
-            error_logger:info_report([{br, Br}, {data, Data}]),
-            [ ok = tuncer:send(N, Data) || N <- Dev ],
-            switch(Br, Dev);
         {tuntap, Port, Data} ->
             % Data received on port: flood to all other ports and uplink
             error_logger:info_report([{dev, Port}, {data, Data}]),
-            [ ok = tuncer:send(N, Data) || N <- [Br|Dev], N =/= Port ],
-            switch(Br, Dev);
+            [ ok = tuncer:send(N, Data) || N <- Dev, N =/= Port ],
+            switch(Dev);
         Error ->
             error_logger:error_report([{error, Error}])
     end.
