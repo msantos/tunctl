@@ -134,11 +134,29 @@ write(Fd, Data) when is_integer(Fd), is_binary(Data) ->
 send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
     gen_server:call(Ref, {send, Data}).
 
-% FIXME: race condition: events can be delivered out of order
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
+    Owner = self(),
+    case gen_server:call(Ref, getowner, infinity) of
+        Owner ->
+            controlling_process_1(Ref, Pid);
+        _ ->
+            {error, not_owner}
+    end.
+
+controlling_process_1(Ref, Pid) ->
+    Port = gen_server:call(Ref, getport, infinity),
+    case setopt(Ref, {active, false}) of
+        ok ->
+            controlling_process_2(Ref, Pid, Port /= false);
+        Error ->
+            Error
+    end.
+
+controlling_process_2(Ref, Pid, Mode) ->
     case gen_server:call(Ref, {controlling_process, Pid}) of
         ok ->
-            flush_events(Ref, Pid);
+            flush_events(Ref, Pid),
+            setopt(Ref, {active, Mode});
         Error ->
             Error
     end.
@@ -189,6 +207,14 @@ handle_call(flags, _From, #state{flag = Flag} = State) ->
 handle_call(getfd, _From, #state{fd = FD} = State) ->
     {reply, FD, State};
 
+handle_call(getport, _From, #state{port = Port} = State) ->
+    {reply, Port, State};
+
+handle_call(getowner, _From, #state{pid = Pid} = State) ->
+    {reply, Pid, State};
+
+handle_call({controlling_process, Owner}, {Owner,_}, #state{pid = Owner} = State) ->
+    {reply, ok, State};
 handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) ->
     link(Pid),
     unlink(Owner),
@@ -221,7 +247,6 @@ handle_call({setopt, {active, false}}, _From, #state{port = Port} = State) ->
 
 handle_call({setopt, _}, _From, State) ->
     {reply, {error, badarg}, State};
-
 
 %%
 %% manipulate the tun/tap device
