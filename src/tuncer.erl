@@ -135,9 +135,12 @@ send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
 
 % FIXME: race condition: events can be delivered out of order
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
-    flush_events(Ref, Pid),
-    gen_server:call(Ref, {controlling_process, Pid}),
-    flush_events(Ref, Pid).
+    case gen_server:call(Ref, {controlling_process, Pid}) of
+        ok ->
+            flush_events(Ref, Pid);
+        Error ->
+            Error
+    end.
 
 start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
     Pid = self(),
@@ -183,7 +186,11 @@ handle_call(getfd, _From, #state{fd = FD} = State) ->
     {reply, FD, State};
 
 handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) ->
+    link(Pid),
+    unlink(Owner),
     {reply, ok, State#state{pid = Pid}};
+handle_call({controlling_process, _}, _, State) ->
+    {reply, {error, not_owner}, State};
 
 
 %%
