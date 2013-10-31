@@ -105,6 +105,14 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Remove the TUN/TAP interface.
 
+    setopt(Ref, Option) -> ok | {error, posix()}
+
+        Types   Ref = pid()
+                Option = {active, true} | {active, false}
+
+        Set an option. setopt/2 can be used for performing flow control
+        when active mode is enabled.
+
     up(Ref, IP) -> ok | {error, posix()}
 
         Types   Ref = pid()

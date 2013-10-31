@@ -50,7 +50,8 @@
         up/2, down/1,
         mtu/1, mtu/2,
 
-        controlling_process/2
+        controlling_process/2,
+        setopt/2
     ]).
 
 -export([start_link/2]).
@@ -142,6 +143,9 @@ controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
             Error
     end.
 
+setopt(Ref, Option) when is_tuple(Option) ->
+    gen_server:call(Ref, {setopt, Option}, infinity).
+
 start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
     Pid = self(),
     gen_server:start_link(?MODULE, [Pid, Ifname, Opt], []).
@@ -192,6 +196,32 @@ handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) 
 handle_call({controlling_process, _}, _, State) ->
     {reply, {error, not_owner}, State};
 
+handle_call({setopt, {active, true}}, _From, #state{port = false, fd = FD} = State) ->
+    try set_active(FD) of
+        Port ->
+            {reply, ok, State#state{port = Port}}
+    catch
+        error:Error ->
+            {reply, {error, Error}, State}
+    end;
+handle_call({setopt, {active, true}}, _From, State) ->
+    {reply, ok, State};
+
+handle_call({setopt, {active, false}}, _From, #state{port = false} = State) ->
+    {reply, ok, State};
+handle_call({setopt, {active, false}}, _From, #state{port = Port} = State) ->
+    Reply = try erlang:port_close(Port) of
+        true ->
+            ok
+    catch
+        error:Error ->
+            {error, Error}
+    end,
+    {reply, Reply, State#state{port = false}};
+
+handle_call({setopt, _}, _From, State) ->
+    {reply, {error, badarg}, State};
+
 
 %%
 %% manipulate the tun/tap device
@@ -238,6 +268,9 @@ handle_cast(_Msg, State) ->
 %%
 %% {active, true} mode
 %%
+handle_info({'EXIT', _, _}, #state{port = false} = State) ->
+    {noreply, State};
+
 handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev = Dev} = State) ->
     Pid ! {tuntap_error, self(), Error},
     tunctl:down(Dev),
