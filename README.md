@@ -90,6 +90,9 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
             {tuntap_error, PID, posix()}
 
+        Retrieving data from devices in {active, false} mode can be done
+        using recv/1,2 or read/1,2.
+
         Options contains a list of flags.
 
             tun: create a tun interface
@@ -113,6 +116,18 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
                 Data = binary()
 
         Write data to the tun/tap device.
+
+    recv(Ref) -> {ok, Buf} | {error, posix()}
+    recv(Ref, Size) -> {ok, Buf} | {error, posix()}
+
+        Types   Ref = pid()
+                Size = integer()
+                Buf = binary()
+
+        Read data from the tuntap interface.
+
+        If the device is in {active, true} mode, recv/1,2 will return
+        {error, einval}.
 
     setopt(Ref, Option) -> ok | {error, posix()}
 
@@ -183,9 +198,10 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
     read(Fd, Size) -> {ok, Buf} | {error, posix()}
 
         Types   Fd = integer()
-                Size = integer() Buf = binary()
+                Size = integer()
+                Buf = binary()
 
-        Read _Size_ bytes from the interface.
+        Read data from the tuntap interface.
 
     write(Fd, Buf) -> ok | {error, posix()}
 

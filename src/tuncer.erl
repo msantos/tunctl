@@ -44,6 +44,7 @@
         write/2,
 
         send/2,
+        recv/1, recv/2,
 
         header/1,
 
@@ -133,6 +134,11 @@ write(FD, Data) when is_integer(FD), is_binary(Data) ->
 
 send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
     gen_server:call(Ref, {send, Data}).
+
+recv(Ref) ->
+    recv(Ref, 16#FFFF).
+recv(Ref, Len) when is_pid(Ref), is_integer(Len) ->
+    gen_server:call(Ref, {recv, Len}).
 
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
     Owner = self(),
@@ -263,6 +269,12 @@ handle_call({send, Data}, _From, #state{port = Port} = State) ->
             {error, Error}
     end,
     {reply, Reply, State};
+
+handle_call({recv, Len}, _From, #state{port = false, fd = FD} = State) ->
+    Reply = procket:read(FD, Len),
+    {reply, Reply, State};
+handle_call({recv, _Len}, _From, State) ->
+    {reply, {error, einval}, State};
 
 handle_call({persist, Status}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:persist(FD, Status),
