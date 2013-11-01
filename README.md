@@ -74,13 +74,15 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Types   Device = [ string() | binary() ]
                 Options = [ Flag ]
-                Flag = [ tun | tap | no_pi | one_queue | vnet_hdr | tun_excl ]
+                Flag = [ tun | tap | no_pi | one_queue | vnet_hdr | tun_excl
+                        | {active, false} | {active, true} ]
 
         Device is the TUN/TAP interface name. If an interface name is not
         specified, the TUN/TAP driver will choose one (for tap devices,
         starting from "tap0"; for tun devices, beginning from "tun0").
 
-        Data is sent as messages:
+        When the device is in {active, true} mode, data is sent as
+        messages:
 
             {tuntap, PID, binary()}
 
@@ -97,13 +99,20 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
             no_pi: do not prepend the data with a 4 byte header describing
                    the physical interface
 
-        The options default to [tap, no_pi].
+        The options default to [tap, no_pi, {active, false}].
 
     destroy(Ref) -> ok
 
         Types   Ref = pid()
 
         Remove the TUN/TAP interface.
+
+    send(Ref, Data) -> ok | {error, posix()}
+
+        Types   Ref = pid()
+                Data = binary()
+
+        Write data to the tun/tap device.
 
     setopt(Ref, Option) -> ok | {error, posix()}
 
@@ -112,6 +121,12 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Set an option. setopt/2 can be used for performing flow control
         when active mode is enabled.
+
+    controlling_process(Ref, NewOwner) -> ok | {error, posix()}
+
+        Types   Ref = NewOwner = pid()
+
+        Transfer ownership of the tuntap device to another process.
 
     up(Ref, IP) -> ok | {error, posix()}
 
