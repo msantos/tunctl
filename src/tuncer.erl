@@ -123,13 +123,13 @@ mtu(Ref) when is_pid(Ref) ->
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}).
 
-read(Fd) ->
-    read(Fd, 16#FFFF).
-read(Fd, Len) when is_integer(Fd), is_integer(Len) ->
-    procket:read(Fd, Len).
+read(FD) ->
+    read(FD, 16#FFFF).
+read(FD, Len) when is_integer(FD), is_integer(Len) ->
+    procket:read(FD, Len).
 
-write(Fd, Data) when is_integer(Fd), is_binary(Data) ->
-    procket:write(Fd, Data).
+write(FD, Data) when is_integer(FD), is_binary(Data) ->
+    procket:write(FD, Data).
 
 send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
     gen_server:call(Ref, {send, Data}).
@@ -251,6 +251,9 @@ handle_call({setopt, _}, _From, State) ->
 %%
 %% manipulate the tun/tap device
 %%
+handle_call({send, Data}, _From, #state{port = false, fd = FD} = State) ->
+    Reply = procket:write(FD, Data),
+    {reply, Reply, State};
 handle_call({send, Data}, _From, #state{port = Port} = State) ->
     Reply = try erlang:port_command(Port, Data) of
         true ->
