@@ -67,7 +67,6 @@
         flag        % TUNSETIFF ifr flags
     }).
 
-
 -define(IFNAMSIZ, 16).
 
 %%--------------------------------------------------------------------
@@ -87,13 +86,13 @@ header(Buf) when byte_size(Buf) > 4 ->
     tunctl:header(Buf).
 
 devname(Ref) when is_pid(Ref) ->
-    gen_server:call(Ref, devname).
+    getstate(Ref, dev).
 
 flags(Ref) when is_pid(Ref) ->
-    gen_server:call(Ref, flags).
+    getstate(Ref, flag).
 
 getfd(Ref) when is_pid(Ref) ->
-    gen_server:call(Ref, getfd).
+    getstate(Ref, fd).
 
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy).
@@ -142,30 +141,25 @@ recv(Ref, Len) when is_pid(Ref), is_integer(Len) ->
 
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
     Owner = self(),
-    case gen_server:call(Ref, getowner, infinity) of
-        Owner ->
-            controlling_process_1(Ref, Pid);
+    case gen_server:call(Ref, {state, [pid, port]}, infinity) of
+        [{pid, Owner}, {port, false}] ->
+            controlling_process_1(Ref, Pid, false, ok);
+        [{pid, Owner}, {port, _}] ->
+            controlling_process_1(Ref, Pid, true, setopt(Ref, {active,false}));
         _ ->
             {error, not_owner}
     end.
 
-controlling_process_1(Ref, Pid) ->
-    Port = gen_server:call(Ref, getport, infinity),
-    case setopt(Ref, {active, false}) of
-        ok ->
-            controlling_process_2(Ref, Pid, Port /= false);
-        Error ->
-            Error
-    end.
-
-controlling_process_2(Ref, Pid, Mode) ->
+controlling_process_1(Ref, Pid, Mode, ok) ->
     case gen_server:call(Ref, {controlling_process, Pid}) of
         ok ->
             flush_events(Ref, Pid),
             setopt(Ref, {active, Mode});
         Error ->
             Error
-    end.
+    end;
+controlling_process_1(_Ref, _Pid, _Mode, Error) ->
+    Error.
 
 setopt(Ref, Option) when is_tuple(Option) ->
     gen_server:call(Ref, {setopt, Option}, infinity).
@@ -204,20 +198,8 @@ init([Pid, Ifname, Flag]) ->
 %%
 %% retrieve/modify gen_server state
 %%
-handle_call(devname, _From, #state{dev = Dev} = State) ->
-    {reply, Dev, State};
-
-handle_call(flags, _From, #state{flag = Flag} = State) ->
-    {reply, Flag, State};
-
-handle_call(getfd, _From, #state{fd = FD} = State) ->
-    {reply, FD, State};
-
-handle_call(getport, _From, #state{port = Port} = State) ->
-    {reply, Port, State};
-
-handle_call(getowner, _From, #state{pid = Pid} = State) ->
-    {reply, Pid, State};
+handle_call({state, Field}, _From, State) ->
+    {reply, state(Field, State), State};
 
 handle_call({controlling_process, Owner}, {Owner,_}, #state{pid = Owner} = State) ->
     {reply, ok, State};
@@ -356,3 +338,21 @@ flush_events(Ref, Pid) ->
     after
         0 -> ok
     end.
+
+getstate(Ref, Key) when is_atom(Key) ->
+    [{Key, Value}] = gen_server:call(Ref, {state, [Key]}, infinity),
+    Value.
+
+state(Fields, State) ->
+    state(Fields, State, []).
+state([], _State, Acc) ->
+    lists:reverse(Acc);
+state([Field|Fields], State, Acc) ->
+    state(Fields, State, [{Field, field(Field, State)}|Acc]).
+
+field(port, #state{port = Port}) -> Port;
+field(pid, #state{pid = Pid}) -> Pid;
+field(fd, #state{fd = FD}) -> FD;
+field(dev, #state{dev = Dev}) -> Dev;
+field(flag, #state{flag = Flag}) -> Flag;
+field(_, _) -> unsupported.
