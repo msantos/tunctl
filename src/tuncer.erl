@@ -95,25 +95,25 @@ getfd(Ref) when is_pid(Ref) ->
     getstate(Ref, fd).
 
 destroy(Ref) when is_pid(Ref) ->
-    gen_server:call(Ref, destroy).
+    gen_server:call(Ref, destroy, infinity).
 
 persist(Ref, Bool) when is_pid(Ref), ( Bool == true orelse Bool == false )  ->
-    gen_server:call(Ref, {persist, Bool}).
+    gen_server:call(Ref, {persist, Bool}, infinity).
 
 owner(Ref, Owner) when is_pid(Ref), is_integer(Owner) ->
-    gen_server:call(Ref, {owner, Owner}).
+    gen_server:call(Ref, {owner, Owner}, infinity).
 
 group(Ref, Group) when is_pid(Ref), is_integer(Group) ->
-    gen_server:call(Ref, {group, Group}).
+    gen_server:call(Ref, {group, Group}, infinity).
 
 up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     {ok, IPv4} = inet_parse:address(Addr),
     up(Ref, IPv4);
 up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
-    gen_server:call(Ref, {up, Addr}).
+    gen_server:call(Ref, {up, Addr}, infinity).
 
 down(Ref) when is_pid(Ref) ->
-    gen_server:call(Ref, down).
+    gen_server:call(Ref, down, infinity).
 
 mtu(Ref) when is_pid(Ref) ->
     Dev = binary_to_list(devname(Ref)),
@@ -121,7 +121,7 @@ mtu(Ref) when is_pid(Ref) ->
     proplists:get_value(mtu, MTU).
 
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
-    gen_server:call(Ref, {mtu, MTU}).
+    gen_server:call(Ref, {mtu, MTU}, infinity).
 
 read(FD) ->
     read(FD, 16#FFFF).
@@ -132,12 +132,12 @@ write(FD, Data) when is_integer(FD), is_binary(Data) ->
     procket:write(FD, Data).
 
 send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
-    gen_server:call(Ref, {send, Data}).
+    gen_server:call(Ref, {send, Data}, infinity).
 
 recv(Ref) ->
     recv(Ref, 16#FFFF).
 recv(Ref, Len) when is_pid(Ref), is_integer(Len) ->
-    gen_server:call(Ref, {recv, Len}).
+    gen_server:call(Ref, {recv, Len}, infinity).
 
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
     Owner = self(),
@@ -151,7 +151,7 @@ controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
     end.
 
 controlling_process_1(Ref, Pid, Mode, ok) ->
-    case gen_server:call(Ref, {controlling_process, Pid}) of
+    case gen_server:call(Ref, {controlling_process, Pid}, infinity) of
         ok ->
             flush_events(Ref, Pid),
             setopt(Ref, {active, Mode});
