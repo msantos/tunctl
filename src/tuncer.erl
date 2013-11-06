@@ -182,7 +182,7 @@ init([Pid, Ifname, Flag]) ->
     Active = proplists:get_value(active, Flag, false),
 
     Port = case Active of
-        true -> set_active(FD);
+        true -> set_mode(active, FD);
         false -> false
     end,
 
@@ -211,7 +211,7 @@ handle_call({controlling_process, _}, _, State) ->
     {reply, {error, not_owner}, State};
 
 handle_call({setopt, {active, true}}, _From, #state{port = false, fd = FD} = State) ->
-    try set_active(FD) of
+    try set_mode(active, FD) of
         Port ->
             {reply, ok, State#state{port = Port}}
     catch
@@ -224,13 +224,7 @@ handle_call({setopt, {active, true}}, _From, State) ->
 handle_call({setopt, {active, false}}, _From, #state{port = false} = State) ->
     {reply, ok, State};
 handle_call({setopt, {active, false}}, _From, #state{port = Port} = State) ->
-    Reply = try erlang:port_close(Port) of
-        true ->
-            ok
-    catch
-        error:Error ->
-            {error, Error}
-    end,
+    Reply = set_mode(passive, Port),
     {reply, Reply, State#state{port = false}};
 
 handle_call({setopt, _}, _From, State) ->
@@ -327,8 +321,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-set_active(FD) ->
-    open_port({fd, FD, FD}, [stream, binary]).
+set_mode(active, FD) ->
+    open_port({fd, FD, FD}, [stream, binary]);
+set_mode(passive, Port) ->
+    try erlang:port_close(Port) of
+        true ->
+            ok
+    catch
+        error:Error ->
+            {error, Error}
+    end.
 
 flush_events(Ref, Pid) ->
     receive
