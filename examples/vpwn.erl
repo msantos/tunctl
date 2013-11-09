@@ -35,25 +35,19 @@
 %% Usage:
 %%  node2: Start up Erlang on the destination node:
 %%
-%%      ./start.sh -setcookie OMNOMNOM -name v
+%%      ./start.sh -setcookie OMNOMNOM -name node
 %%
 %%  node1: then on the source node:
 %%
-%%      ./start.sh -setcookie OMNOMNOM -name v
+%%      ./start.sh -setcookie OMNOMNOM -name node
 %%
 %%      vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
 %%
 -module(vpwn).
 -export([start/3]).
 
-
-start(Node, Src, Dst) when is_list(Src) ->
-    start(Node, inet_parse:address(Src), Dst);
-start(Node, Src, Dst) when is_list(Dst) ->
-    start(Node, Src, inet_parse:address(Dst));
-
 start(Node, SrcIP, DstIP) ->
-    Pid = peer(Node, SrcIP, DstIP),
+    Pid = peer(Node, addr(SrcIP), addr(DstIP)),
 
     {ok, Dev} = tuncer:create(),
     ok = tuncer:up(Dev, SrcIP),
@@ -89,3 +83,9 @@ write(FD) ->
         Error ->
             error_logger:error_report([{write_error, Error}])
     end.
+
+addr(Addr) when is_tuple(Addr) ->
+    Addr;
+addr(Str) when is_list(Str) ->
+    {ok, Addr} = inet_parse:address(Str),
+    Addr.

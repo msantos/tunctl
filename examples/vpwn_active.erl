@@ -41,14 +41,14 @@
 %%
 %%      ./start.sh -setcookie OMNOMNOM -name node
 %%
-%%      vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
+%%      vpwn_active:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
 %%
 -module(vpwn_active).
 -export([start/3]).
 
 
 start(Node, SrcIP, DstIP) ->
-    Pid = peer(Node, SrcIP, DstIP),
+    Pid = peer(Node, addr(SrcIP), addr(DstIP)),
 
     {ok, Dev} = tuncer:create("vpwn", [tap, no_pi, {active, true}]),
     ok = tuncer:up(Dev, SrcIP),
@@ -75,3 +75,9 @@ proxy(Dev, Pid) ->
         Error ->
             Error
     end.
+
+addr(Addr) when is_tuple(Addr) ->
+    Addr;
+addr(Str) when is_list(Str) ->
+    {ok, Addr} = inet_parse:address(Str),
+    Addr.
