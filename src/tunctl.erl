@@ -131,8 +131,7 @@ os() ->
         {unix, linux} -> tunctl_linux;
         {unix, darwin} -> tunctl_darwin;
         {unix, freebsd} -> tunctl_freebsd;
-        {unix, netbsd} -> tunctl_netbsd;
-        {unix, _} -> throw({error, unsupported})
+        {unix, netbsd} -> tunctl_netbsd
     end.
 
 
