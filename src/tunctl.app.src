@@ -1,5 +1,7 @@
 {application, tunctl,
     [
     {description, "TUN/TAP interface"},
+    {applications, []},
+    {included_applications, [procket]},
     {vsn, "0.2.1"}
     ]}.
