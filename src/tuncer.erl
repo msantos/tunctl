@@ -284,6 +284,9 @@ handle_cast(_Msg, State) ->
 %%
 %% {active, true} mode
 %%
+handle_info({'EXIT',_,normal}, State) ->
+    {noreply, State};
+
 handle_info({'EXIT', _, _}, #state{port = false} = State) ->
     {noreply, State};
 
