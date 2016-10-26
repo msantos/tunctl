@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2013, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2016, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -292,7 +292,7 @@ handle_info({'EXIT', _, _}, #state{port = false} = State) ->
 
 handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev = Dev} = State) ->
     Pid ! {tuntap_error, self(), Error},
-    tunctl:down(Dev),
+    _ = tunctl:down(Dev),
     tunctl:persist(FD, false),
     procket:close(FD),
     {stop, normal, State};
@@ -313,7 +313,7 @@ terminate(_Reason, #state{fd = FD, dev = Dev, port = Port}) ->
         true ->
             ok
     end,
-    tunctl:down(Dev),
+    _ = tunctl:down(Dev),
     tunctl:persist(FD, false),
     procket:close(FD),
     ok.

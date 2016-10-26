@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2013, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2016, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -151,7 +151,7 @@ os_up(Dev, {A,B,C,D,E,F,G,H}, Mask) ->
 os_down(Dev) ->
     % BSD systems don't destroy the interface so clean up
     % any IPv6 addresses
-    os_ipv6_down(Dev),
+    _ = os_ipv6_down(Dev),
 
     Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " down",
     cmd(Cmd).
