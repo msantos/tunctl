@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2016, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2017, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -64,7 +64,8 @@
         pid,        % PID of controlling process
         fd,         % TUN/TAP file descriptor
         dev,        % device name
-        flag        % TUNSETIFF ifr flags
+        flag,       % TUNSETIFF ifr flags
+        persist
     }).
 
 -define(IFNAMSIZ, 16).
@@ -254,7 +255,7 @@ handle_call({recv, _Len}, _From, State) ->
 
 handle_call({persist, Status}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:persist(FD, Status),
-    {reply, Reply, State};
+    {reply, Reply, State#state{persist = Status}};
 
 handle_call({owner, Owner}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:owner(FD, Owner),
@@ -290,10 +291,15 @@ handle_info({'EXIT',_,normal}, State) ->
 handle_info({'EXIT', _, _}, #state{port = false} = State) ->
     {noreply, State};
 
-handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev = Dev} = State) ->
+handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev = Dev, persist = Persist} = State) ->
     Pid ! {tuntap_error, self(), Error},
-    _ = tunctl:down(Dev),
-    tunctl:persist(FD, false),
+    case Persist of
+        true ->
+            ok;
+        false ->
+            _ = tunctl:down(Dev),
+            tunctl:persist(FD, false)
+    end,
     procket:close(FD),
     {stop, normal, State};
 
