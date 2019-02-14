@@ -86,14 +86,12 @@ up(Dev, {A,B,C,D}) ->
 up(Dev, {A,B,C,D,E,F,G,H}) ->
     up(Dev, {A,B,C,D,E,F,G,H}, 64).
 
-up(Dev, {A,B,C,D}, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
+up(Dev, Addr, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
     Module = os(),
     case Module of
-        tunctl_linux -> tunctl_linux:up(Dev, {A,B,C,D}, Mask);
-        _ -> os_up(Dev, {A,B,C,D}, Mask)
-    end;
-up(Dev, {A,B,C,D,E,F,G,H}, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
-    os_up(Dev, {A,B,C,D,E,F,G,H}, Mask).
+        tunctl_linux -> tunctl_linux:up(Dev, Addr, Mask);
+        _ -> os_up(Dev, Addr, Mask)
+    end.
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     Module = os(),

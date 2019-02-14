@@ -38,7 +38,7 @@
         create/2,
         persist/2,
         owner/2, group/2,
-        up/3, down/1,
+        up/3, up/4, down/1,
 
         header/1
     ]).
@@ -47,6 +47,7 @@
 -define(SIOCGIFFLAGS, 16#8913).
 -define(SIOCSIFFLAGS, 16#8914).
 -define(SIOCSIFADDR, 16#8916).
+-define(SIOGIFINDEX, 16#8933).
 
 -define(TUNDEV, "net/tun").
 
@@ -93,25 +94,50 @@ owner(FD, Owner) when is_integer(FD), is_integer(Owner) ->
 group(FD, Group) when is_integer(FD), is_integer(Group) ->
     tunctl:ioctl(FD, ?TUNSETGROUP, int_to_bin(Group)).
 
-
 %%
 %% Configure the interface just like ifconfig except
 %% with fewer features and no error checking.
 %%
 %% Also, we ignore the mask.
 %%
-up(Dev, {A,B,C,D}, _Mask) when byte_size(Dev) < ?IFNAMSIZ ->
-    {ok, Socket} = procket:socket(inet, dgram,  0),
+up(Dev, {_,_,_,_} = Addr, Mask) ->
+    up(Dev, Addr, Mask, inet);
+  up(Dev, {_,_,_,_,_,_,_,_} = Addr, Mask) ->
+      up(Dev, Addr, Mask, inet6).
+
+up(Dev, Addr, Mask, AddrFamily) when byte_size(Dev) < ?IFNAMSIZ ->
+
 
     % struct sockaddr_in
     % dev[IFNAMSIZ], family:2 bytes, port:2 bytes, ipaddr:4 bytes
-    Ifr = <<Dev/bytes, 0:( (?IFNAMSIZ - byte_size(Dev) - 1)*8), 0:8,
-        ?PF_INET:16/native, 0:16, A:8, B:8, C:8, D:8, 0:(8*8)>>,
+    {Socket, Ifr} = case AddrFamily of
+        inet ->
+            {ok, Sock} = procket:socket(inet, dgram,  0),
 
-    Res = try ok = tunctl:ioctl(Socket, ?SIOCSIFADDR, Ifr),
+            {A, B, C, D} = Addr,
+            Buf = <<Dev/bytes, 0:( (?IFNAMSIZ - byte_size(Dev) - 1)*8), 0:8,
+              ?PF_INET:16/native, 0:16, A:8, B:8, C:8, D:8, 0:(8*8)>>,
+
+            {Sock, Buf};
+
+        inet6 ->
+            {ok, Sock} = procket:socket(inet6, dgram,  0),
+
+            {A, B, C, D, E, F, G, H} = Addr,
+            {ok, IfIdx} = get_ifindex(Sock, Dev),
+            BinAddr = <<A:16, B:16, C:16, D:16, E:16, F:16, G:16, H:16>>,
+            Buf = <<BinAddr/binary, Mask:32/little, IfIdx:4/native-signed-integer-unit:8>>,
+
+            {Sock, Buf}
+    end,
+
+    Res = try tunctl:ioctl(Socket, ?SIOCSIFADDR, Ifr) of
+      ok ->
         {ok, Flag} = get_flag(Socket, Dev),
-        ok = set_flag(Socket, Dev, Flag bor ?IFF_RUNNING bor ?IFF_UP) of
-        _ -> ok
+        ok = set_flag(Socket, Dev, Flag bor ?IFF_RUNNING bor ?IFF_UP);
+
+      {error, eexist} ->
+        ok
     catch
         error:Error ->
             {error, Error}
@@ -164,6 +190,12 @@ get_flag(FD, Dev) ->
         FD, ?SIOCGIFFLAGS, <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:(16*8)>>
     ),
     {ok, Flag}.
+
+get_ifindex(FD, Dev) ->
+  {ok, <<_:(16*8), Index:4/native-signed-integer-unit:8, _/binary>>} = procket:ioctl(
+      FD, ?SIOGIFINDEX, <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:(16*8)>>
+  ),
+  {ok, Index}.
 
 
 int_to_bin(Int) ->
