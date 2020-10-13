@@ -174,6 +174,7 @@ header(<<?UINT16(Flags), ?UINT16(Proto), Buf/binary>>) ->
 %%
 flag(tun) -> ?IFF_TUN;
 flag(tap) -> ?IFF_TAP;
+flag(multi_queue) -> ?IFF_MULTI_QUEUE;
 flag(no_pi) -> ?IFF_NO_PI;
 flag(one_queue) -> ?IFF_ONE_QUEUE;
 flag(vnet_hdr) -> ?IFF_VNET_HDR;
