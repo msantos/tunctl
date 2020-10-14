@@ -74,7 +74,7 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Types   Device = [ string() | binary() ]
                 Options = [ Flag ]
-                Flag = [ tun | tap | no_pi | one_queue | vnet_hdr | tun_excl
+                Flag = [ tun | tap | no_pi | one_queue | multi_queue | vnet_hdr | tun_excl
                         | {active, false} | {active, true} ]
 
         Device is the TUN/TAP interface name. If an interface name is not

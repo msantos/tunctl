@@ -56,6 +56,7 @@
 % TUNSETIFF ifr flags
 -define(IFF_TUN, 16#0001).
 -define(IFF_TAP, 16#0002).
+-define(IFF_MULTI_QUEUE, 16#0100).
 -define(IFF_NO_PI, 16#1000).
 -define(IFF_ONE_QUEUE, 16#2000).
 -define(IFF_VNET_HDR, 16#4000).
