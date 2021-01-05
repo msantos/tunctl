@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2016, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2021, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -31,27 +31,32 @@
 -module(tunctl).
 
 -include("tuntap.hrl").
+
 -include_lib("procket/include/ioctl.hrl").
 -include_lib("procket/include/procket.hrl").
 
 -export([
-        create/0, create/1, create/2,
-        persist/2,
-        owner/2, group/2,
-        up/2, up/3, down/1,
+    create/0, create/1, create/2,
+    persist/2,
+    owner/2,
+    group/2,
+    up/2, up/3,
+    down/1,
 
-        header/1
-    ]).
+    header/1
+]).
+
 -export([
-        ioctl/3, cmd/1
-    ]).
-
+    ioctl/3,
+    cmd/1
+]).
 
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
 create() ->
     create(<<>>).
+
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
 
@@ -59,11 +64,9 @@ create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     Module = os(),
     Module:create(Ifname, Opt).
 
-
 persist(FD, Status) ->
     Module = os(),
     Module:persist(FD, bool(Status)).
-
 
 %%
 %% Change the owner/group of the tun device
@@ -76,15 +79,14 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
     Module = os(),
     Module:group(FD, Group).
 
-
 %%
 %% Configure the interface just like ifconfig except
 %% with fewer features and no error checking
 %%
-up(Dev, {A,B,C,D}) ->
-    up(Dev, {A,B,C,D}, 24);
-up(Dev, {A,B,C,D,E,F,G,H}) ->
-    up(Dev, {A,B,C,D,E,F,G,H}, 64).
+up(Dev, {A, B, C, D}) ->
+    up(Dev, {A, B, C, D}, 24);
+up(Dev, {A, B, C, D, E, F, G, H}) ->
+    up(Dev, {A, B, C, D, E, F, G, H}, 64).
 
 up(Dev, Addr, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
     Module = os(),
@@ -100,11 +102,9 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
         _ -> os_down(Dev)
     end.
 
-
 header(Packet) ->
     Module = os(),
     Module:header(Packet).
-
 
 %%--------------------------------------------------------------------
 %%% Internal functions
@@ -132,18 +132,23 @@ os() ->
         {unix, netbsd} -> tunctl_netbsd
     end.
 
-
 %% Shell out to ifconfig on systems where ioctl requires
 %% root privs (or native code hasn't been written yet).
-os_up(Dev, {A,B,C,D}, Mask) ->
-    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " " ++
-    inet_parse:ntoa({A,B,C,D}) ++
-    "/" ++ integer_to_list(Mask) ++ " up",
+os_up(Dev, {A, B, C, D}, Mask) ->
+    Cmd =
+        "sudo ifconfig " ++
+            binary_to_list(Dev) ++
+            " " ++
+            inet_parse:ntoa({A, B, C, D}) ++
+            "/" ++ integer_to_list(Mask) ++ " up",
     cmd(Cmd);
-os_up(Dev, {A,B,C,D,E,F,G,H}, Mask) ->
-    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " inet6 add " ++
-    inet_parse:ntoa({A,B,C,D,E,F,G,H}) ++
-    "/" ++ integer_to_list(Mask) ++ " up",
+os_up(Dev, {A, B, C, D, E, F, G, H}, Mask) ->
+    Cmd =
+        "sudo ifconfig " ++
+            binary_to_list(Dev) ++
+            " inet6 add " ++
+            inet_parse:ntoa({A, B, C, D, E, F, G, H}) ++
+            "/" ++ integer_to_list(Mask) ++ " up",
     cmd(Cmd).
 
 os_down(Dev) ->
@@ -156,7 +161,8 @@ os_down(Dev) ->
 
 os_ipv6_down(Dev) ->
     case os:type() of
-        {unix, linux} -> ok;
+        {unix, linux} ->
+            ok;
         {unix, BSD} when BSD == freebsd; BSD == darwin ->
             os_ipv6_down_1(Dev)
     end.
@@ -166,11 +172,17 @@ os_ipv6_down_1(Ifname) ->
     {ok, Devs} = inet:getifaddrs(),
     Attr = proplists:get_value(Dev, Devs),
 
-    [ os_ipv6_down_2(Dev, Addr) || Addr
-        <- proplists:get_all_values(addr, Attr),
-        tuple_size(Addr) == 8 ].
+    [
+        os_ipv6_down_2(Dev, Addr)
+        || Addr <-
+               proplists:get_all_values(addr, Attr),
+           tuple_size(Addr) == 8
+    ].
 
 os_ipv6_down_2(Dev, Addr) ->
-    Cmd = "sudo ifconfig " ++ Dev ++ " inet6 " ++
-        inet_parse:ntoa(Addr) ++ " -alias",
+    Cmd =
+        "sudo ifconfig " ++
+            Dev ++
+            " inet6 " ++
+            inet_parse:ntoa(Addr) ++ " -alias",
     cmd(Cmd).

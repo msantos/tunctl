@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2013, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2021, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -31,16 +31,18 @@
 -module(tunctl_darwin).
 
 -include("tuntap.hrl").
+
 -include_lib("procket/include/ioctl.hrl").
 -include_lib("procket/include/procket.hrl").
 
 -export([
-        create/2,
-        persist/2,
-        owner/2, group/2,
+    create/2,
+    persist/2,
+    owner/2,
+    group/2,
 
-        header/1
-    ]).
+    header/1
+]).
 
 -define(TUNSIFHEAD, ?IOW($t, 96, ?SIZEOF_INT)).
 -define(TUNGIFHEAD, ?IOR($t, 97, ?SIZEOF_INT)).
@@ -48,13 +50,11 @@
 -define(SIZEOF_STRUCT_IFALIASREQ, 64).
 -define(SIOCAIFADDR, ?IOW($i, 26, ?SIZEOF_STRUCT_IFALIASREQ)).
 
-
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
 create(<<>>, Opt) ->
     create(<<"tap0">>, Opt);
-
 %% Ignore the options for now
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     case procket:dev(binary_to_list(Ifname)) of
@@ -73,7 +73,6 @@ create_1(FD, Ifname, Opt) ->
     end,
     {ok, FD, Ifname}.
 
-
 %% N/A
 persist(_FD, _Status) ->
     ok.
@@ -86,7 +85,6 @@ group(__FD, _Group) ->
 
 header(<<?UINT32(Proto), Buf/binary>>) ->
     {tun_pi, 0, Proto, Buf}.
-
 
 %%--------------------------------------------------------------------
 %%% Internal functions

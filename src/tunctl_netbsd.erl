@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2012, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2021, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %% Copyright (c) 2013, YAMAMOTO Takashi
 %% All rights reserved.
@@ -38,22 +38,22 @@
 %% http://netbsd.gw.com/cgi-bin/man-cgi?tun
 
 -include("tuntap.hrl").
+
 -include_lib("procket/include/ioctl.hrl").
 -include_lib("procket/include/procket.hrl").
 
 -export([
-        create/2,
-        persist/2,
-        owner/2, group/2
-    ]).
-
+    create/2,
+    persist/2,
+    owner/2,
+    group/2
+]).
 
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
 create(<<>>, Opt) ->
     create(<<"tap0">>, Opt);
-
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     case proplists:get_bool(no_pi, Opt) of
         true ->
@@ -67,7 +67,6 @@ create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
             {error, unsupported}
     end.
 
-
 %% N/A
 persist(_FD, _Status) ->
     ok.
@@ -77,7 +76,6 @@ owner(_FD, _Owner) ->
 
 group(__FD, _Group) ->
     ok.
-
 
 %%--------------------------------------------------------------------
 %%% Internal functions

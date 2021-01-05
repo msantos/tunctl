@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2013, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2021, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -31,18 +31,20 @@
 -module(tunctl_linux).
 
 -include("tuntap.hrl").
+
 -include_lib("procket/include/ioctl.hrl").
 -include_lib("procket/include/procket.hrl").
 
 -export([
-        create/2,
-        persist/2,
-        owner/2, group/2,
-        up/3, up/4, down/1,
+    create/2,
+    persist/2,
+    owner/2,
+    group/2,
+    up/3, up/4,
+    down/1,
 
-        header/1
-    ]).
-
+    header/1
+]).
 
 -define(SIOCGIFFLAGS, 16#8913).
 -define(SIOCSIFFLAGS, 16#8914).
@@ -55,7 +57,7 @@
 %%% Exports
 %%--------------------------------------------------------------------
 create(<<>>, Opt) ->
-    create(<<0:(15*8)>>, Opt);
+    create(<<0:(15 * 8)>>, Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     case procket:dev(?TUNDEV) of
         {ok, FD} ->
@@ -68,9 +70,12 @@ create_1(FD, Ifname, Opt) ->
     Flag = lists:foldl(fun(N, F) -> F bor flag(N) end, 0, Opt),
     Result = procket:ioctl(FD, ?TUNSETIFF, <<
         Ifname/binary,
-        0:((15*8) - (byte_size(Ifname)*8)), 0:8,    % ifrn_name[IFNAMSIZ]: interface name
-        Flag:2/native-signed-integer-unit:8,        % ifru_flags
-        0:(14*8)
+        % ifrn_name[IFNAMSIZ]: interface name
+        0:((15 * 8) - (byte_size(Ifname) * 8)),
+        0:8,
+        % ifru_flags
+        Flag:2/native-signed-integer-unit:8,
+        0:(14 * 8)
     >>),
     case Result of
         {ok, Dev} ->
@@ -80,10 +85,8 @@ create_1(FD, Ifname, Opt) ->
             Error
     end.
 
-
 persist(FD, Status) ->
     tunctl:ioctl(FD, ?TUNSETPERSIST, Status).
-
 
 %%
 %% Change the owner/group of the tun device
@@ -100,70 +103,70 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
 %%
 %% Also, we ignore the mask.
 %%
-up(Dev, {_,_,_,_} = Addr, Mask) ->
+up(Dev, {_, _, _, _} = Addr, Mask) ->
     up(Dev, Addr, Mask, inet);
-  up(Dev, {_,_,_,_,_,_,_,_} = Addr, Mask) ->
-      up(Dev, Addr, Mask, inet6).
+up(Dev, {_, _, _, _, _, _, _, _} = Addr, Mask) ->
+    up(Dev, Addr, Mask, inet6).
 
 up(Dev, Addr, Mask, AddrFamily) when byte_size(Dev) < ?IFNAMSIZ ->
-
-
     % struct sockaddr_in
     % dev[IFNAMSIZ], family:2 bytes, port:2 bytes, ipaddr:4 bytes
-    {Socket, Ifr} = case AddrFamily of
-        inet ->
-            {ok, Sock} = procket:socket(inet, dgram,  0),
+    {Socket, Ifr} =
+        case AddrFamily of
+            inet ->
+                {ok, Sock} = procket:socket(inet, dgram, 0),
 
-            {A, B, C, D} = Addr,
-            Buf = <<Dev/bytes, 0:( (?IFNAMSIZ - byte_size(Dev) - 1)*8), 0:8,
-              ?PF_INET:16/native, 0:16, A:8, B:8, C:8, D:8, 0:(8*8)>>,
+                {A, B, C, D} = Addr,
+                Buf =
+                    <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8, ?PF_INET:16/native,
+                        0:16, A:8, B:8, C:8, D:8, 0:(8 * 8)>>,
 
-            {Sock, Buf};
+                {Sock, Buf};
+            inet6 ->
+                {ok, Sock} = procket:socket(inet6, dgram, 0),
 
-        inet6 ->
-            {ok, Sock} = procket:socket(inet6, dgram,  0),
+                {A, B, C, D, E, F, G, H} = Addr,
+                {ok, IfIdx} = get_ifindex(Sock, Dev),
+                BinAddr = <<A:16, B:16, C:16, D:16, E:16, F:16, G:16, H:16>>,
+                Buf = <<BinAddr/binary, Mask:32/little, IfIdx:4/native-signed-integer-unit:8>>,
 
-            {A, B, C, D, E, F, G, H} = Addr,
-            {ok, IfIdx} = get_ifindex(Sock, Dev),
-            BinAddr = <<A:16, B:16, C:16, D:16, E:16, F:16, G:16, H:16>>,
-            Buf = <<BinAddr/binary, Mask:32/little, IfIdx:4/native-signed-integer-unit:8>>,
+                {Sock, Buf}
+        end,
 
-            {Sock, Buf}
-    end,
-
-    Res = try tunctl:ioctl(Socket, ?SIOCSIFADDR, Ifr) of
-      ok ->
-        {ok, Flag} = get_flag(Socket, Dev),
-        ok = set_flag(Socket, Dev, Flag bor ?IFF_RUNNING bor ?IFF_UP);
-
-      {error, eexist} ->
-        ok
-    catch
-        error:Error ->
-            {error, Error}
-    end,
+    Res =
+        try tunctl:ioctl(Socket, ?SIOCSIFADDR, Ifr) of
+            ok ->
+                {ok, Flag} = get_flag(Socket, Dev),
+                ok = set_flag(Socket, Dev, Flag bor ?IFF_RUNNING bor ?IFF_UP);
+            {error, eexist} ->
+                ok
+        catch
+            error:Error ->
+                {error, Error}
+        end,
 
     ok = procket:close(Socket),
     Res.
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
-    {ok, Socket} = procket:socket(inet, dgram,  0),
+    {ok, Socket} = procket:socket(inet, dgram, 0),
 
-    Res = try {ok, Flags} = get_flag(Socket, Dev),
-        ok = set_flag(Socket, Dev, Flags band bnot(?IFF_UP)) of
-        _ -> ok
-    catch
-        error:Error ->
-            {error, Error}
-    end,
+    Res =
+        try
+            {ok, Flags} = get_flag(Socket, Dev),
+            ok = set_flag(Socket, Dev, Flags band bnot (?IFF_UP))
+        of
+            _ -> ok
+        catch
+            error:Error ->
+                {error, Error}
+        end,
 
     ok = procket:close(Socket),
     Res.
 
-
 header(<<?UINT16(Flags), ?UINT16(Proto), Buf/binary>>) ->
     {tun_pi, Flags, Proto, Buf}.
-
 
 %%--------------------------------------------------------------------
 %%% Internal functions
@@ -182,22 +185,28 @@ flag(tun_excl) -> ?IFF_TUN_EXCL;
 flag(_) -> 0.
 
 set_flag(FD, Dev, Flag) ->
-    tunctl:ioctl(FD, ?SIOCSIFFLAGS,
-        <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:8,
-        Flag:2/native-signed-integer-unit:8,
-        0:(14*8)>>).
+    tunctl:ioctl(
+        FD,
+        ?SIOCSIFFLAGS,
+        <<Dev/bytes, 0:((15 - byte_size(Dev)) * 8), 0:8, Flag:2/native-signed-integer-unit:8,
+            0:(14 * 8)>>
+    ).
+
 get_flag(FD, Dev) ->
-    {ok, <<_:(16*8), Flag:2/native-signed-integer-unit:8, _/binary>>} = procket:ioctl(
-        FD, ?SIOCGIFFLAGS, <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:(16*8)>>
+    {ok, <<_:(16 * 8), Flag:2/native-signed-integer-unit:8, _/binary>>} = procket:ioctl(
+        FD,
+        ?SIOCGIFFLAGS,
+        <<Dev/bytes, 0:((15 - byte_size(Dev)) * 8), 0:(16 * 8)>>
     ),
     {ok, Flag}.
 
 get_ifindex(FD, Dev) ->
-  {ok, <<_:(16*8), Index:4/native-signed-integer-unit:8, _/binary>>} = procket:ioctl(
-      FD, ?SIOGIFINDEX, <<Dev/bytes, 0:((15-byte_size(Dev))*8), 0:(16*8)>>
-  ),
-  {ok, Index}.
-
+    {ok, <<_:(16 * 8), Index:4/native-signed-integer-unit:8, _/binary>>} = procket:ioctl(
+        FD,
+        ?SIOGIFINDEX,
+        <<Dev/bytes, 0:((15 - byte_size(Dev)) * 8), 0:(16 * 8)>>
+    ),
+    {ok, Index}.
 
 int_to_bin(Int) ->
     <<Int:4/native-integer-unsigned-unit:8>>.

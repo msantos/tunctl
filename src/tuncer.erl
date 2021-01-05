@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2017, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2021, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -29,44 +29,59 @@
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
 -module(tuncer).
+
 -behaviour(gen_server).
 
-
 -export([
-        create/0, create/1, create/2,
-        devname/1, flags/1, getfd/1,
-        destroy/1,
+    create/0, create/1, create/2,
+    devname/1,
+    flags/1,
+    getfd/1,
+    destroy/1,
 
-        persist/2,
-        owner/2, group/2,
+    persist/2,
+    owner/2,
+    group/2,
 
-        read/1, read/2,
-        write/2,
+    read/1, read/2,
+    write/2,
 
-        send/2,
-        recv/1, recv/2,
+    send/2,
+    recv/1, recv/2,
 
-        header/1,
+    header/1,
 
-        up/2, down/1,
-        mtu/1, mtu/2,
+    up/2,
+    down/1,
+    mtu/1, mtu/2,
 
-        controlling_process/2,
-        setopt/2
-    ]).
+    controlling_process/2,
+    setopt/2
+]).
 
 -export([start_link/2]).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-        terminate/2, code_change/3]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
 
 -record(state, {
-        port,       % false, port
-        pid,        % PID of controlling process
-        fd,         % TUN/TAP file descriptor
-        dev,        % device name
-        flag,       % TUNSETIFF ifr flags
-        persist
-    }).
+    % false, port
+    port,
+    % PID of controlling process
+    pid,
+    % TUN/TAP file descriptor
+    fd,
+    % device name
+    dev,
+    % TUNSETIFF ifr flags
+    flag,
+    persist
+}).
 
 -define(IFNAMSIZ, 16).
 
@@ -75,6 +90,7 @@
 %%--------------------------------------------------------------------
 create() ->
     create(<<>>).
+
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
 
@@ -98,7 +114,7 @@ getfd(Ref) when is_pid(Ref) ->
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy, infinity).
 
-persist(Ref, Bool) when is_pid(Ref), ( Bool == true orelse Bool == false )  ->
+persist(Ref, Bool) when is_pid(Ref), (Bool == true orelse Bool == false) ->
     gen_server:call(Ref, {persist, Bool}, infinity).
 
 owner(Ref, Owner) when is_pid(Ref), is_integer(Owner) ->
@@ -126,6 +142,7 @@ mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
 
 read(FD) ->
     read(FD, 16#FFFF).
+
 read(FD, Len) when is_integer(FD), is_integer(Len) ->
     procket:read(FD, Len).
 
@@ -137,6 +154,7 @@ send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
 
 recv(Ref) ->
     recv(Ref, 16#FFFF).
+
 recv(Ref, Len) when is_pid(Ref), is_integer(Len) ->
     gen_server:call(Ref, {recv, Len}, infinity).
 
@@ -146,7 +164,7 @@ controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
         [{pid, Owner}, {port, false}] ->
             controlling_process_1(Ref, Pid, false, ok);
         [{pid, Owner}, {port, _}] ->
-            controlling_process_1(Ref, Pid, true, setopt(Ref, {active,false}));
+            controlling_process_1(Ref, Pid, true, setopt(Ref, {active, false}));
         _ ->
             {error, not_owner}
     end.
@@ -169,7 +187,6 @@ start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
     Pid = self(),
     gen_server:start_link(?MODULE, [Pid, Ifname, Opt], []).
 
-
 %%--------------------------------------------------------------------
 %%% Callbacks
 %%--------------------------------------------------------------------
@@ -182,35 +199,33 @@ init([Pid, Ifname, Flag]) ->
 
     Active = proplists:get_value(active, Flag, false),
 
-    Port = case Active of
-        true -> set_mode(active, FD);
-        false -> false
-    end,
+    Port =
+        case Active of
+            true -> set_mode(active, FD);
+            false -> false
+        end,
 
     {ok, #state{
-            port = Port,
-            pid = Pid,
-            fd = FD,
-            dev = Dev,
-            flag = Flag
+        port = Port,
+        pid = Pid,
+        fd = FD,
+        dev = Dev,
+        flag = Flag
     }}.
-
 
 %%
 %% retrieve/modify gen_server state
 %%
 handle_call({state, Field}, _From, State) ->
     {reply, state(Field, State), State};
-
-handle_call({controlling_process, Owner}, {Owner,_}, #state{pid = Owner} = State) ->
+handle_call({controlling_process, Owner}, {Owner, _}, #state{pid = Owner} = State) ->
     {reply, ok, State};
-handle_call({controlling_process, Pid}, {Owner,_}, #state{pid = Owner} = State) ->
+handle_call({controlling_process, Pid}, {Owner, _}, #state{pid = Owner} = State) ->
     link(Pid),
     unlink(Owner),
     {reply, ok, State#state{pid = Pid}};
 handle_call({controlling_process, _}, _, State) ->
     {reply, {error, not_owner}, State};
-
 handle_call({setopt, {active, true}}, _From, #state{port = false, fd = FD} = State) ->
     try set_mode(active, FD) of
         Port ->
@@ -221,16 +236,13 @@ handle_call({setopt, {active, true}}, _From, #state{port = false, fd = FD} = Sta
     end;
 handle_call({setopt, {active, true}}, _From, State) ->
     {reply, ok, State};
-
 handle_call({setopt, {active, false}}, _From, #state{port = false} = State) ->
     {reply, ok, State};
 handle_call({setopt, {active, false}}, _From, #state{port = Port} = State) ->
     Reply = set_mode(passive, Port),
     {reply, Reply, State#state{port = false}};
-
 handle_call({setopt, _}, _From, State) ->
     {reply, {error, badarg}, State};
-
 %%
 %% manipulate the tun/tap device
 %%
@@ -238,44 +250,37 @@ handle_call({send, Data}, _From, #state{port = false, fd = FD} = State) ->
     Reply = procket:write(FD, Data),
     {reply, Reply, State};
 handle_call({send, Data}, _From, #state{port = Port} = State) ->
-    Reply = try erlang:port_command(Port, Data) of
-        true ->
-            ok
-    catch
-        error:Error ->
-            {error, Error}
-    end,
+    Reply =
+        try erlang:port_command(Port, Data) of
+            true ->
+                ok
+        catch
+            error:Error ->
+                {error, Error}
+        end,
     {reply, Reply, State};
-
 handle_call({recv, Len}, _From, #state{port = false, fd = FD} = State) ->
     Reply = procket:read(FD, Len),
     {reply, Reply, State};
 handle_call({recv, _Len}, _From, State) ->
     {reply, {error, einval}, State};
-
 handle_call({persist, Status}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:persist(FD, Status),
     {reply, Reply, State#state{persist = Status}};
-
 handle_call({owner, Owner}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:owner(FD, Owner),
     {reply, Reply, State};
-
 handle_call({group, Group}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:group(FD, Group),
     {reply, Reply, State};
-
 handle_call({up, IP}, _From, #state{dev = Dev} = State) ->
     Reply = tunctl:up(Dev, IP),
     {reply, Reply, State};
-
 handle_call(down, _From, #state{dev = Dev} = State) ->
     Reply = tunctl:down(Dev),
     {reply, Reply, State};
-
 handle_call({mtu, _MTU}, _From, #state{dev = _Dev} = State) ->
     {reply, {error, unsupported}, State};
-
 handle_call(destroy, _From, State) ->
     {stop, normal, ok, State}.
 
@@ -285,13 +290,14 @@ handle_cast(_Msg, State) ->
 %%
 %% {active, true} mode
 %%
-handle_info({'EXIT',_,normal}, State) ->
+handle_info({'EXIT', _, normal}, State) ->
     {noreply, State};
-
 handle_info({'EXIT', _, _}, #state{port = false} = State) ->
     {noreply, State};
-
-handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev = Dev, persist = Persist} = State) ->
+handle_info(
+    {'EXIT', Port, Error},
+    #state{port = Port, pid = Pid, fd = FD, dev = Dev, persist = Persist} = State
+) ->
     Pid ! {tuntap_error, self(), Error},
     case Persist of
         true ->
@@ -302,11 +308,9 @@ handle_info({'EXIT', Port, Error}, #state{port = Port, pid = Pid, fd = FD, dev =
     end,
     procket:close(FD),
     {stop, normal, State};
-
 handle_info({Port, {data, Data}}, #state{port = Port, pid = Pid} = State) ->
     Pid ! {tuntap, self(), Data},
     {noreply, State};
-
 % WTF?
 handle_info(Info, State) ->
     error_logger:error_report([wtf, Info]),
@@ -346,8 +350,7 @@ flush_events(Ref, Pid) ->
         {tuntap, Ref, _} = Event ->
             Pid ! Event,
             flush_events(Ref, Pid)
-    after
-        0 -> ok
+    after 0 -> ok
     end.
 
 getstate(Ref, Key) when is_atom(Key) ->
@@ -356,10 +359,11 @@ getstate(Ref, Key) when is_atom(Key) ->
 
 state(Fields, State) ->
     state(Fields, State, []).
+
 state([], _State, Acc) ->
     lists:reverse(Acc);
-state([Field|Fields], State, Acc) ->
-    state(Fields, State, [{Field, field(Field, State)}|Acc]).
+state([Field | Fields], State, Acc) ->
+    state(Fields, State, [{Field, field(Field, State)} | Acc]).
 
 field(port, #state{port = Port}) -> Port;
 field(pid, #state{pid = Pid}) -> Pid;

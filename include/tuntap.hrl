@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2013, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2011-2021, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,8 @@
 
 -define(SIZEOF_INT, 4).
 -define(SIZEOF_UNSIGNED_INT, ?SIZEOF_INT).
--define(UINT16(N), N:2/native-unsigned-integer-unit:8).
--define(UINT32(N), N:4/native-unsigned-integer-unit:8).
+-define(UINT16(N), N:2 / native - unsigned - integer - unit:8).
+-define(UINT32(N), N:4 / native - unsigned - integer - unit:8).
 
 % ifconfig
 -define(IFF_RUNNING, 16#40).
@@ -63,14 +63,18 @@
 -define(IFF_TUN_EXCL, 16#8000).
 
 -record(tun_pi, {
-        flags,  % 2/native-unsigned-integer-unit:8
-        proto   % 2/native-unsigned-integer-unit:8
-    }).
+    % 2/native-unsigned-integer-unit:8
+    flags,
+    % 2/native-unsigned-integer-unit:8
+    proto
+}).
 
 -define(TUN_FLT_ALLMULTI, 16#0001).
 
 -record(tun_filter, {
-        flags, % TUN_FLT_ flags: 2/native-unsigned-integer-unit:8
-        count, % 2/native-unsigned-integer-unit:8
-        addr
+    % TUN_FLT_ flags: 2/native-unsigned-integer-unit:8
+    flags,
+    % 2/native-unsigned-integer-unit:8
+    count,
+    addr
 }).
