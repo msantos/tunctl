@@ -159,6 +159,17 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Unconfigure a TUN/TAP interface.
 
+    dstaddr(Ref, IP) -> ok | {error, posix()}
+
+        Types   Ref = pid()
+                IP = IPv4
+                IPv4 = list() | tuple()
+
+        Configure the remote address for a TUN/TAP interface in
+        point-to-point mode.
+
+        Currently only IPv4 addresses on Linux are supported.
+
     persist(Ref, Boolean) -> ok | {error, posix()}
 
         Types   Ref = pid()
@@ -397,5 +408,3 @@ lxc.network.flags=up
     * add support for tun filtering
 
 * make sure tuncer can never leak file descriptors
-
-* support for setting pointopoint

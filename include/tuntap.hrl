@@ -35,8 +35,9 @@
 -define(UINT32(N), N:4 / native - unsigned - integer - unit:8).
 
 % ifconfig
--define(IFF_RUNNING, 16#40).
--define(IFF_UP, 16#01).
+-define(IFF_UP, 1 bsl 0).
+-define(IFF_POINTOPOINT, 1 bsl 5).
+-define(IFF_RUNNING, 1 bsl 6).
 
 % Ioctl defines
 -define(TUNSETNOCSUM, ?IOW($T, 200, ?SIZEOF_INT)).

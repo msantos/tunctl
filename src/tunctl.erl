@@ -41,6 +41,7 @@
     owner/2,
     group/2,
     up/2, up/3,
+    dstaddr/2,
     down/1,
 
     header/1
@@ -93,6 +94,16 @@ up(Dev, Addr, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
     case Module of
         tunctl_linux -> tunctl_linux:up(Dev, Addr, Mask);
         _ -> os_up(Dev, Addr, Mask)
+    end.
+
+dstaddr(Dev, Addr) when byte_size(Dev) < ?IFNAMSIZ ->
+    Module = os(),
+    case Module of
+        tunctl_linux ->
+            tunctl_linux:dstaddr(Dev, Addr);
+        _ ->
+            % TODO: add support
+            {error, enoent}
     end.
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
@@ -174,9 +185,9 @@ os_ipv6_down_1(Ifname) ->
 
     [
         os_ipv6_down_2(Dev, Addr)
-        || Addr <-
-               proplists:get_all_values(addr, Attr),
-           tuple_size(Addr) == 8
+     || Addr <-
+            proplists:get_all_values(addr, Attr),
+        tuple_size(Addr) == 8
     ].
 
 os_ipv6_down_2(Dev, Addr) ->

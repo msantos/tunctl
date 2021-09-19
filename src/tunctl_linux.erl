@@ -41,6 +41,7 @@
     owner/2,
     group/2,
     up/3, up/4,
+    dstaddr/2,
     down/1,
 
     header/1
@@ -49,6 +50,8 @@
 -define(SIOCGIFFLAGS, 16#8913).
 -define(SIOCSIFFLAGS, 16#8914).
 -define(SIOCSIFADDR, 16#8916).
+% set remote PA address
+-define(SIOCSIFDSTADDR, 16#8918).
 -define(SIOGIFINDEX, 16#8933).
 
 -define(TUNDEV, "net/tun").
@@ -146,6 +149,43 @@ up(Dev, Addr, Mask, AddrFamily) when byte_size(Dev) < ?IFNAMSIZ ->
         end,
 
     ok = procket:close(Socket),
+    Res.
+
+dstaddr(Dev, {A, B, C, D}) when byte_size(Dev) < ?IFNAMSIZ ->
+    % struct sockaddr_in
+    % dev[IFNAMSIZ], family:2 bytes, port:2 bytes, ipaddr:4 bytes
+    case procket:socket(inet, dgram, 0) of
+        {ok, Sock} ->
+            Ifr =
+                <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8, ?PF_INET:16/native,
+                    0:16, A:8, B:8, C:8, D:8, 0:(8 * 8)>>,
+            ifaddr(Dev, Sock, Ifr, ?SIOCSIFDSTADDR, ?IFF_POINTOPOINT);
+        {error, _} = Error ->
+            Error
+    end;
+dstaddr(Dev, {_A, _B, _C, _D, _E, _F, _G, _H}) when byte_size(Dev) < ?IFNAMSIZ ->
+    % See netdevice(7):
+    % Adding a new IPv6 address and deleting an existing IPv6 address
+    % can be done via SIOCSIFADDR and SIOCDIFADDR or via rtnetlink(7).
+    % Retrieving or changing destination IPv6 addresses of a point-to-point
+    % interface is possible only via rtnetlink(7).
+    {error, enodev}.
+
+ifaddr(Dev, Sock, Ifr, Op, Flags) ->
+    Res =
+        try tunctl:ioctl(Sock, Op, Ifr) of
+            ok ->
+                {ok, Flag} = get_flag(Sock, Dev),
+                ok = set_flag(Sock, Dev, Flag bor Flags);
+            {error, eexist} ->
+                ok;
+            {error, _} = Error ->
+                Error
+        catch
+            error:Error ->
+                {error, Error}
+        end,
+    ok = procket:close(Sock),
     Res.
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
