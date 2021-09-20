@@ -125,8 +125,10 @@ group(Ref, Group) when is_pid(Ref), is_integer(Group) ->
     gen_server:call(Ref, {group, Group}, infinity).
 
 up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
-    {ok, IPv4} = inet_parse:address(Addr),
-    up(Ref, IPv4);
+    case inet_parse:address(Addr) of
+        {ok, IPv4} -> up(Ref, IPv4);
+        {error, _} = Error -> Error
+    end;
 up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {up, Addr}, infinity).
 
