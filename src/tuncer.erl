@@ -125,8 +125,10 @@ group(Ref, Group) when is_pid(Ref), is_integer(Group) ->
     gen_server:call(Ref, {group, Group}, infinity).
 
 up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
-    {ok, IPv4} = inet_parse:address(Addr),
-    up(Ref, IPv4);
+    case inet_parse:address(Addr) of
+        {ok, IPv4} -> up(Ref, IPv4);
+        {error, _} = Error -> Error
+    end;
 up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {up, Addr}, infinity).
 
@@ -330,15 +332,20 @@ handle_info(Info, State) ->
     error_logger:error_report([wtf, Info]),
     {noreply, State}.
 
-terminate(_Reason, #state{fd = FD, dev = Dev, port = Port}) ->
+terminate(_Reason, #state{fd = FD, dev = Dev, port = Port, persist = Persist}) ->
     if
         is_port(Port) ->
             catch erlang:port_close(Port);
         true ->
             ok
     end,
-    _ = tunctl:down(Dev),
-    tunctl:persist(FD, false),
+    case Persist of
+        true ->
+            io:format("Persisted!"),
+            ok;
+        false ->
+            _ = tunctl:down(Dev)
+    end,
     procket:close(FD),
     ok.
 
