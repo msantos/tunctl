@@ -401,10 +401,6 @@ lxc.network.flags=up
       into the procket setuid binary for OSes that use the multiplexing
       dev.
 
-    * support setting IPv6 address using ioctl
-
-    * support setting netmask using ioctl
-
     * add support for tun filtering
 
 * make sure tuncer can never leak file descriptors

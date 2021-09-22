@@ -85,7 +85,7 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
 %% with fewer features and no error checking
 %%
 up(Dev, {A, B, C, D}) ->
-    up(Dev, {A, B, C, D}, 24);
+    up(Dev, {A, B, C, D}, 32);
 up(Dev, {A, B, C, D, E, F, G, H}) ->
     up(Dev, {A, B, C, D, E, F, G, H}, 64).
 
