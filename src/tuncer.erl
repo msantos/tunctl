@@ -51,7 +51,7 @@
 
     header/1,
 
-    up/2,
+    up/2, up/3,
     dstaddr/2,
     down/1,
     mtu/1, mtu/2,
@@ -131,6 +131,14 @@ up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     end;
 up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {up, Addr}, infinity).
+
+up(Ref, Addr, Mask) when is_pid(Ref), is_list(Addr), Mask >= 0, Mask =< 32 ->
+    case inet_parse:address(Addr) of
+        {ok, IPv4} -> up(Ref, IPv4, Mask);
+        {error, _} = Error -> Error
+    end;
+up(Ref, Addr, Mask) when is_pid(Ref), is_tuple(Addr), Mask >= 0, Mask =< 32 ->
+    gen_server:call(Ref, {up, Addr, Mask}, infinity).
 
 dstaddr(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     case inet_parse:address(Addr) of
@@ -288,6 +296,9 @@ handle_call({group, Group}, _From, #state{fd = FD} = State) ->
     {reply, Reply, State};
 handle_call({up, IP}, _From, #state{dev = Dev} = State) ->
     Reply = tunctl:up(Dev, IP),
+    {reply, Reply, State};
+handle_call({up, IP, Mask}, _From, #state{dev = Dev} = State) ->
+    Reply = tunctl:up(Dev, IP, Mask),
     {reply, Reply, State};
 handle_call({dstaddr, IP}, _From, #state{dev = Dev} = State) ->
     Reply = tunctl:dstaddr(Dev, IP),

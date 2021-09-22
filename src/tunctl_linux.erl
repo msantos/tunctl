@@ -50,6 +50,7 @@
 -define(SIOCGIFFLAGS, 16#8913).
 -define(SIOCSIFFLAGS, 16#8914).
 -define(SIOCSIFADDR, 16#8916).
+-define(SIOCSIFNETMASK, 16#891c).
 % set remote PA address
 -define(SIOCSIFDSTADDR, 16#8918).
 -define(SIOGIFINDEX, 16#8933).
@@ -106,7 +107,7 @@ group(FD, Group) when is_integer(FD), is_integer(Group) ->
 %%
 %% Also, we ignore the mask.
 %%
-up(Dev, {A, B, C, D}, _Mask) when byte_size(Dev) < ?IFNAMSIZ ->
+up(Dev, {A, B, C, D}, Mask) when byte_size(Dev) < ?IFNAMSIZ, Mask >= 0, Mask =< 32 ->
     % struct sockaddr_in
     % dev[IFNAMSIZ], family:2 bytes, port:2 bytes, ipaddr:4 bytes
     case procket:socket(inet, dgram, 0) of
@@ -114,7 +115,20 @@ up(Dev, {A, B, C, D}, _Mask) when byte_size(Dev) < ?IFNAMSIZ ->
             Ifr =
                 <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8, ?PF_INET:16/native,
                     0:16, A:8, B:8, C:8, D:8, 0:(8 * 8)>>,
-            ifaddr(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP);
+            case ifreq(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP) of
+                ok ->
+                    ifreq(
+                        Dev,
+                        Sock,
+                        <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8,
+                            ?PF_INET:16/native, 0:16,
+                            ((16#ffffffff bsl (32 - Mask)) band 16#ffffffff):4/big-unsigned-integer-unit:8>>,
+                        ?SIOCSIFNETMASK,
+                        0
+                    );
+                {error, _} = Error ->
+                    Error
+            end;
         {error, _} = Error ->
             Error
     end;
@@ -124,7 +138,9 @@ up(Dev, {A, B, C, D, E, F, G, H}, Mask) when byte_size(Dev) < ?IFNAMSIZ ->
             {ok, IfIdx} = get_ifindex(Sock, Dev),
             BinAddr = <<A:16, B:16, C:16, D:16, E:16, F:16, G:16, H:16>>,
             Ifr = <<BinAddr/binary, Mask:32/little, IfIdx:4/native-signed-integer-unit:8>>,
-            ifaddr(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP);
+            Res = ifreq(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP),
+            ok = procket:close(Sock),
+            Res;
         {error, _} = Error ->
             Error
     end.
@@ -137,7 +153,9 @@ dstaddr(Dev, {A, B, C, D}) when byte_size(Dev) < ?IFNAMSIZ ->
             Ifr =
                 <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8, ?PF_INET:16/native,
                     0:16, A:8, B:8, C:8, D:8, 0:(8 * 8)>>,
-            ifaddr(Dev, Sock, Ifr, ?SIOCSIFDSTADDR, ?IFF_POINTOPOINT);
+            Res = ifreq(Dev, Sock, Ifr, ?SIOCSIFDSTADDR, ?IFF_POINTOPOINT),
+            ok = procket:close(Sock),
+            Res;
         {error, _} = Error ->
             Error
     end;
@@ -149,22 +167,19 @@ dstaddr(Dev, {_A, _B, _C, _D, _E, _F, _G, _H}) when byte_size(Dev) < ?IFNAMSIZ -
     % interface is possible only via rtnetlink(7).
     {error, enodev}.
 
-ifaddr(Dev, Sock, Ifr, Op, Flags) ->
-    Res =
-        try tunctl:ioctl(Sock, Op, Ifr) of
-            ok ->
-                {ok, Flag} = get_flag(Sock, Dev),
-                ok = set_flag(Sock, Dev, Flag bor Flags);
-            {error, eexist} ->
-                ok;
-            {error, _} = Error ->
-                Error
-        catch
-            error:Error ->
-                {error, Error}
-        end,
-    ok = procket:close(Sock),
-    Res.
+ifreq(Dev, Sock, Ifr, Op, Flags) ->
+    try tunctl:ioctl(Sock, Op, Ifr) of
+        ok ->
+            {ok, Flag} = get_flag(Sock, Dev),
+            ok = set_flag(Sock, Dev, Flag bor Flags);
+        {error, eexist} ->
+            ok;
+        {error, _} = Error ->
+            Error
+    catch
+        error:Error ->
+            {error, Error}
+    end.
 
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     {ok, Socket} = procket:socket(inet, dgram, 0),
