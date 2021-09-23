@@ -354,7 +354,6 @@ terminate(_Reason, #state{fd = FD, dev = Dev, port = Port, persist = Persist}) -
     end,
     case Persist of
         true ->
-            io:format("Persisted!"),
             ok;
         false ->
             _ = tunctl:down(Dev)
