@@ -343,15 +343,19 @@ handle_info(Info, State) ->
     error_logger:error_report([wtf, Info]),
     {noreply, State}.
 
-terminate(_Reason, #state{fd = FD, dev = Dev, port = Port}) ->
+terminate(_Reason, #state{fd = FD, dev = Dev, port = Port, persist = Persist}) ->
     if
         is_port(Port) ->
             catch erlang:port_close(Port);
         true ->
             ok
     end,
-    _ = tunctl:down(Dev),
-    tunctl:persist(FD, false),
+    case Persist of
+        true ->
+            ok;
+        false ->
+            _ = tunctl:down(Dev)
+    end,
     procket:close(FD),
     ok.
 
