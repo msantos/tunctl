@@ -74,14 +74,14 @@
     % false, port
     port,
     % PID of controlling process
-    pid,
+    pid :: pid(),
     % TUN/TAP file descriptor
     fd,
     % device name
     dev,
     % TUNSETIFF ifr flags
     flag,
-    persist
+    persist :: boolean()
 }).
 
 -define(IFNAMSIZ, 16).
@@ -115,7 +115,7 @@ getfd(Ref) when is_pid(Ref) ->
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy, infinity).
 
-persist(Ref, Bool) when is_pid(Ref), (Bool == true orelse Bool == false) ->
+persist(Ref, Bool) when is_pid(Ref), is_boolean(Bool) ->
     gen_server:call(Ref, {persist, Bool}, infinity).
 
 owner(Ref, Owner) when is_pid(Ref), is_integer(Owner) ->
@@ -211,6 +211,7 @@ init([Pid, Ifname, Flag]) ->
     {ok, FD, Dev} = tunctl:create(Ifname, Flag),
 
     Active = proplists:get_value(active, Flag, false),
+    Persist = proplists:get_value(persist, Flag, false),
 
     Port =
         case Active of
@@ -223,7 +224,8 @@ init([Pid, Ifname, Flag]) ->
         pid = Pid,
         fd = FD,
         dev = Dev,
-        flag = Flag
+        flag = Flag,
+        persist = Persist
     }}.
 
 %%
