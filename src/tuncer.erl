@@ -74,14 +74,14 @@
     % false, port
     port,
     % PID of controlling process
-    pid,
+    pid :: pid(),
     % TUN/TAP file descriptor
     fd,
     % device name
     dev,
     % TUNSETIFF ifr flags
     flag,
-    persist
+    persist = false :: boolean()
 }).
 
 -define(IFNAMSIZ, 16).
@@ -115,7 +115,7 @@ getfd(Ref) when is_pid(Ref) ->
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy, infinity).
 
-persist(Ref, Bool) when is_pid(Ref), (Bool == true orelse Bool == false) ->
+persist(Ref, Bool) when is_pid(Ref), is_boolean(Bool) ->
     gen_server:call(Ref, {persist, Bool}, infinity).
 
 owner(Ref, Owner) when is_pid(Ref), is_integer(Owner) ->
