@@ -42,6 +42,7 @@
     group/2,
     up/3,
     dstaddr/2,
+    broadcast/2,
     down/1,
 
     header/1
@@ -53,6 +54,9 @@
 -define(SIOCSIFNETMASK, 16#891c).
 % set remote PA address
 -define(SIOCSIFDSTADDR, 16#8918).
+% set broadcast PA address
+-define(SIOCSIFBRDADDR, 16#891a).
+
 -define(SIOGIFINDEX, 16#8933).
 
 -define(TUNDEV, "net/tun").
@@ -165,6 +169,23 @@ dstaddr(Dev, {_A, _B, _C, _D, _E, _F, _G, _H}) when byte_size(Dev) < ?IFNAMSIZ -
     % can be done via SIOCSIFADDR and SIOCDIFADDR or via rtnetlink(7).
     % Retrieving or changing destination IPv6 addresses of a point-to-point
     % interface is possible only via rtnetlink(7).
+    {error, enodev}.
+
+broadcast(Dev, {A, B, C, D}) when byte_size(Dev) < ?IFNAMSIZ ->
+    % struct sockaddr_in
+    % dev[IFNAMSIZ], family:2 bytes, port:2 bytes, ipaddr:4 bytes
+    case procket:socket(inet, dgram, 0) of
+        {ok, Sock} ->
+            Ifr =
+                <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8, ?PF_INET:16/native,
+                    0:16, A:8, B:8, C:8, D:8, 0:(8 * 8)>>,
+            Res = ifreq(Dev, Sock, Ifr, ?SIOCSIFBRDADDR, 0),
+            ok = procket:close(Sock),
+            Res;
+        {error, _} = Error ->
+            Error
+    end;
+broadcast(Dev, {_A, _B, _C, _D, _E, _F, _G, _H}) when byte_size(Dev) < ?IFNAMSIZ ->
     {error, enodev}.
 
 ifreq(Dev, Sock, Ifr, Op, Flags) ->

@@ -170,6 +170,16 @@ Tuncer is a stand up guy and just like him, tuncer has your back.
 
         Currently only IPv4 addresses on Linux are supported.
 
+    broadcast(Ref, IP) -> ok | {error, posix()}
+
+        Types   Ref = pid()
+                IP = IPv4
+                IPv4 = list() | tuple()
+
+        Configure the broadcast address for a TUN/TAP interface.
+
+        Currently only IPv4 addresses on Linux are supported.
+
     persist(Ref, Boolean) -> ok | {error, posix()}
 
         Types   Ref = pid()
@@ -382,7 +392,6 @@ br:start(["erlbr0", "erl0", "erl1", "erl2"]).
 # brctl show br0
 bridge name     bridge id               STP enabled     interfaces
 br0             8000.4aec6d3a44d1       no              erlbr0
-                                                        eth0
 ```
 
 * Move the switch port interface into the container. The interface name inside the container will be known as "erl0".
