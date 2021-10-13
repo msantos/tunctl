@@ -63,7 +63,8 @@
 create(<<>>, Opt) ->
     create(<<0:(15 * 8)>>, Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
-    case procket:dev(?TUNDEV) of
+    ExtraOptions = proplists:get_value(extra, Opt, []),
+    case procket:dev(?TUNDEV, ExtraOptions) of
         {ok, FD} ->
             create_1(FD, Ifname, Opt);
         Error ->

@@ -294,11 +294,11 @@ handle_call({owner, Owner}, _From, #state{fd = FD} = State) ->
 handle_call({group, Group}, _From, #state{fd = FD} = State) ->
     Reply = tunctl:group(FD, Group),
     {reply, Reply, State};
-handle_call({up, IP}, _From, #state{dev = Dev} = State) ->
-    Reply = tunctl:up(Dev, IP),
+handle_call({up, IP}, _From, #state{dev = Dev, flag = Flag} = State) ->
+    Reply = up_tunnel(fun() -> tunctl:up(Dev, IP) end, Flag),
     {reply, Reply, State};
-handle_call({up, IP, Mask}, _From, #state{dev = Dev} = State) ->
-    Reply = tunctl:up(Dev, IP, Mask),
+handle_call({up, IP, Mask}, _From, #state{dev = Dev, flag = Flag} = State) ->
+    Reply = up_tunnel(fun() -> tunctl:up(Dev, IP, Mask) end, Flag),
     {reply, Reply, State};
 handle_call({dstaddr, IP}, _From, #state{dev = Dev} = State) ->
     Reply = tunctl:dstaddr(Dev, IP),
@@ -374,6 +374,27 @@ set_mode(passive, Port) ->
     catch
         error:Error ->
             {error, Error}
+    end.
+
+-spec up_tunnel(fun(), list()) -> ok | {error, term()}.
+up_tunnel(UpCallback, Flag) ->
+    Extra = proplists:get_value(extra, Flag, []),
+    case proplists:get_value(namespace, Extra) of
+        undefined ->
+            UpCallback();
+        NS ->
+            up_into_namespace(UpCallback, NS)
+    end.
+
+up_into_namespace(UpCallback, NS) ->
+    case procket:open_nif("/proc/self/ns/net", read) of
+        {ok, OriginalNsFD} ->
+            ok = procket:setns(NS),
+            UpCallback(),
+            ok = procket:setns_by_fd(OriginalNsFD),
+            procket:close(OriginalNsFD);
+        {error, _R} = E ->
+            E
     end.
 
 flush_events(Ref, Pid) ->
