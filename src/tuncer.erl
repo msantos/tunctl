@@ -92,13 +92,17 @@
 create() ->
     create(<<>>).
 
+-spec create(Ifname :: binary() | string()) -> gen_server:start_ret().
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
 
+-spec create(Ifname :: binary() | string(), Opt :: proplists:proplist()) -> gen_server:start_ret().
 create(Ifname, Opt) when is_list(Ifname) ->
     create(list_to_binary(Ifname), Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
-    start_link(Ifname, Opt).
+    start_link(Ifname, Opt);
+create(_, _) ->
+    {error, badargs}.
 
 header(Buf) when byte_size(Buf) > 4 ->
     tunctl:header(Buf).
@@ -216,23 +220,26 @@ init([Pid, Ifname, Flag]) ->
 
     % if Dev is NULL, the tuntap driver will choose an
     % interface name
-    {ok, FD, Dev} = tunctl:create(Ifname, Flag),
+    case tunctl:create(Ifname, Flag) of
+        {ok, FD, Dev} ->
+            Active = proplists:get_value(active, Flag, false),
 
-    Active = proplists:get_value(active, Flag, false),
+            Port =
+                case Active of
+                    true -> set_mode(active, FD);
+                    false -> false
+                end,
 
-    Port =
-        case Active of
-            true -> set_mode(active, FD);
-            false -> false
-        end,
-
-    {ok, #state{
-        port = Port,
-        pid = Pid,
-        fd = FD,
-        dev = Dev,
-        flag = Flag
-    }}.
+            {ok, #state{
+                port = Port,
+                pid = Pid,
+                fd = FD,
+                dev = Dev,
+                flag = Flag
+            }};
+        Else ->
+            Else
+    end.
 
 %%
 %% retrieve/modify gen_server state
@@ -344,20 +351,19 @@ handle_info(Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, #state{fd = FD, dev = Dev, port = Port, persist = Persist}) ->
-    if
-        is_port(Port) ->
-            catch erlang:port_close(Port);
-        true ->
-            ok
-    end,
-    case Persist of
-        true ->
-            ok;
-        false ->
-            _ = tunctl:down(Dev)
-    end,
-    procket:close(FD),
+    terminate_port(Port),
+    ok = tun_down(Dev, Persist),
+    procket:close(FD).
+
+terminate_port(Port) when is_port(Port) ->
+    catch erlang:port_close(Port);
+terminate_port(_Port) ->
     ok.
+
+tun_down(_Dev, true = _Persist) ->
+    ok;
+tun_down(Dev, false = _Persist) ->
+    tunctl:down(Dev).
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
