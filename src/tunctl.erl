@@ -44,7 +44,8 @@
     dstaddr/2,
     down/1,
 
-    header/1
+    header/1,
+    up_into_namespace/2
 ]).
 
 -export([
@@ -111,6 +112,23 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     case Module of
         tunctl_linux -> tunctl_linux:down(Dev);
         _ -> os_down(Dev)
+    end.
+
+up_into_namespace(UpCallback, NS) ->
+    Module = os(),
+    case Module of
+        tunctl_linux ->
+            case procket:open_nif("/proc/self/ns/net", read) of
+                {ok, OriginalNsFD} ->
+                    ok = procket:setns(NS),
+                    UpCallback(),
+                    ok = procket:setns_by_fd(OriginalNsFD),
+                    procket:close(OriginalNsFD);
+                {error, _R} = E ->
+                    E
+            end;
+        _ ->
+            {error, enoent}
     end.
 
 header(Packet) ->

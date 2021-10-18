@@ -383,18 +383,7 @@ up_tunnel(UpCallback, Flag) ->
         undefined ->
             UpCallback();
         NS ->
-            up_into_namespace(UpCallback, NS)
-    end.
-
-up_into_namespace(UpCallback, NS) ->
-    case procket:open_nif("/proc/self/ns/net", read) of
-        {ok, OriginalNsFD} ->
-            ok = procket:setns(NS),
-            UpCallback(),
-            ok = procket:setns_by_fd(OriginalNsFD),
-            procket:close(OriginalNsFD);
-        {error, _R} = E ->
-            E
+            tunctl:up_into_namespace(UpCallback, NS)
     end.
 
 flush_events(Ref, Pid) ->
