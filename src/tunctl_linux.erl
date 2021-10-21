@@ -67,7 +67,15 @@
 create(<<>>, Opt) ->
     create(<<0:(15 * 8)>>, Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
-    case procket:dev(?TUNDEV) of
+    % support namespace
+    DevOpt =
+        case proplists:get_value(namespace, Opt) of
+            undefined ->
+                [];
+            Val ->
+                [{namespace, Val}]
+        end,
+    case procket:dev(?TUNDEV, DevOpt) of
         {ok, FD} ->
             create_1(FD, Ifname, Opt);
         Error ->
