@@ -2,5 +2,5 @@
     {description, "TUN/TAP interface"},
     {applications, [kernel, stdlib]},
     {included_applications, [procket]},
-    {vsn, "0.2.1"}
+    {vsn, "0.3.0"}
 ]}.
