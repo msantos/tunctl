@@ -327,8 +327,9 @@ handle_call({broadcast, IP}, _From, #state{dev = Dev} = State) ->
 handle_call(down, _From, #state{dev = Dev} = State) ->
     Reply = tunctl:down(Dev),
     {reply, Reply, State};
-handle_call({mtu, _MTU}, _From, #state{dev = _Dev} = State) ->
-    {reply, {error, unsupported}, State};
+handle_call({mtu, MTU}, _From, #state{dev = Dev, fd = FD} = State) ->
+    Reply = tunctl:mtu(FD, Dev, MTU),
+    {reply, Reply, State};
 handle_call(destroy, _From, State) ->
     {stop, normal, ok, State}.
 
