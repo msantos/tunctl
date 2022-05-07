@@ -45,6 +45,8 @@
     broadcast/2,
     down/1,
 
+    mtu/3,
+
     header/1
 ]).
 
@@ -102,6 +104,16 @@ dstaddr(Dev, Addr) when byte_size(Dev) < ?IFNAMSIZ ->
     case Module of
         tunctl_linux ->
             tunctl_linux:dstaddr(Dev, Addr);
+        _ ->
+            % TODO: add support
+            {error, enoent}
+    end.
+
+mtu(FD, Ifname, MTU) ->
+    Module = os(),
+    case Module of
+        tunctl_linux ->
+            tunctl_linux:mtu(FD, Ifname, MTU);
         _ ->
             % TODO: add support
             {error, enoent}

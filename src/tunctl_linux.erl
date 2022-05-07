@@ -45,12 +45,17 @@
     broadcast/2,
     down/1,
 
+    mtu/3,
+
     header/1
 ]).
 
 -define(SIOCGIFFLAGS, 16#8913).
 -define(SIOCSIFFLAGS, 16#8914).
 -define(SIOCSIFADDR, 16#8916).
+
+-define(SIOCSIFMTU, 16#8922).
+
 -define(SIOCSIFNETMASK, 16#891c).
 % set remote PA address
 -define(SIOCSIFDSTADDR, 16#8918).
@@ -153,6 +158,30 @@ up(Dev, {A, B, C, D, E, F, G, H}, Mask) when byte_size(Dev) < ?IFNAMSIZ ->
             Res = ifreq(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP),
             ok = procket:close(Sock),
             Res;
+        {error, _} = Error ->
+            Error
+    end.
+
+mtu(FD, Ifname, MTU) when byte_size(Ifname) < ?IFNAMSIZ ->
+    case procket:socket(inet, dgram, 0) of
+        {ok, Sock} ->
+            io:format("name ~s~n", [Ifname]),
+            Result = procket:ioctl(Sock, ?SIOCSIFMTU, <<
+                Ifname/binary,
+                % ifrn_name[IFNAMSIZ]: interface name
+                0:((15 * 8) - (byte_size(Ifname) * 8)),
+                0:8,
+                % ifr_mtu
+                MTU:4/native-signed-integer-unit:8,
+                0:(12 * 8)
+            >>),
+            ok = procket:close(Sock),
+            case Result of
+                {ok, Dev} ->
+                    {ok, FD, hd(binary:split(Dev, <<0>>))};
+                Error ->
+                    Error
+            end;
         {error, _} = Error ->
             Error
     end.
