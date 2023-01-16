@@ -2,7 +2,7 @@
 
 REBAR ?= rebar3
 
-all: dirs deps compile
+all: dirs compile
 
 dirs:
 	@mkdir -p priv/tmp
