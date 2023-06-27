@@ -1,4 +1,4 @@
-%%% Copyright (c) 2011-2022 Michael Santos <michael.santos@gmail.com>. All
+%%% Copyright (c) 2011-2023 Michael Santos <michael.santos@gmail.com>. All
 %%% rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,8 @@
 %%% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+%% @doc tuncer manages tuntap devices.
 -module(tuncer).
 
 -behaviour(gen_server).
@@ -89,13 +91,44 @@
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
+
+%% @doc Create tap0.
 create() ->
     create(<<>>).
 
+%% @doc Create a named tap device.
 -spec create(Ifname :: binary() | string()) -> gen_server:start_ret().
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
 
+%% @doc Create a tuntap device.
+%%
+%%  Device is the TUN/TAP interface name. If an interface name is empty,
+%%  the TUN/TAP driver will choose one (for tap devices,
+%%  starting from `tap0'; for tun devices, beginning from `tun0').
+%%
+%%  When the device is in `{active, true}' mode, data is sent as
+%%  messages:
+%%
+%%      `{tuntap, PID, binary()}'
+%%
+%%  If an error is encountered:
+%%
+%%      `{tuntap_error, PID, posix()}'
+%%
+%%  Retrieving data from devices in `{active, false}' mode can be done
+%%  using recv/1,2 or read/1,2.
+%%
+%%  Options contains a list of flags.
+%%
+%%      tun: create a tun interface
+%%
+%%      tap: create a tap interface
+%%
+%%      no_pi: do not prepend the data with a 4 byte header describing
+%%             the physical interface
+%%
+%%  The options default to `[tap, no_pi, {active, false}]'.
 -spec create(Ifname :: binary() | string(), Opt :: proplists:proplist()) -> gen_server:start_ret().
 create(Ifname, Opt) when is_list(Ifname) ->
     create(list_to_binary(Ifname), Opt);
