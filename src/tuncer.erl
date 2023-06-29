@@ -93,10 +93,37 @@
 %%--------------------------------------------------------------------
 
 %% @doc Create tap0.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> tuncer:create().
+%% {ok,<0.175.0>}
+%% '''
+%%
+%% ```
+%% $ ip link show tap0
+%% 2: tap0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+%%     link/ether 32:a9:6a:5b:48:c3 brd ff:ff:ff:ff:ff:ff
+%% '''
+-spec create() -> gen_server:start_ret().
 create() ->
     create(<<>>).
 
 %% @doc Create a named tap device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> tuncer:create("foo").
+%% {ok,<0.175.0>}
+%% '''
+%%
+%% ```
+%% $ ip link show foo
+%% 3: foo: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+%%     link/ether 9e:f1:90:e2:2c:66 brd ff:ff:ff:ff:ff:ff
+%% '''
 -spec create(Ifname :: binary() | string()) -> gen_server:start_ret().
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
@@ -129,6 +156,19 @@ create(Ifname) ->
 %%             the physical interface
 %%
 %%  The options default to `[tap, no_pi, {active, false}]'.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.181.0>}
+%% '''
+%%
+%% ```
+%% $ ip link show tun0
+%% 4: tun0: <POINTOPOINT,MULTICAST,NOARP> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 500
+%%     link/none
+%% '''
 -spec create(Ifname :: binary() | string(), Opt :: proplists:proplist()) -> gen_server:start_ret().
 create(Ifname, Opt) when is_list(Ifname) ->
     create(list_to_binary(Ifname), Opt);
@@ -149,6 +189,7 @@ flags(Ref) when is_pid(Ref) ->
 getfd(Ref) when is_pid(Ref) ->
     getstate(Ref, fd).
 
+%% @doc Remove the TUN/TAP interface.
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy, infinity).
 
