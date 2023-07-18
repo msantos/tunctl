@@ -44,19 +44,19 @@
 %% To add cap_net_admin capabilities:
 %%
 %% ```
-%%  sudo setcap cap_net_admin=ep /path/to/bin/beam # or beam.smp
+%%  sudo setcap cap_net_admin=ep /path/to/bin/beam.smp
 %% '''
 %%
 %% To check the privileges:
 %%
 %% ```
-%%  getcap /path/to/bin/beam # or beam.smp
+%%  getcap /path/to/bin/beam.smp
 %% '''
 %%
 %% To remove the privileges:
 %%
 %% ```
-%%  sudo setcap -r cap_net_admin=ep /path/to/bin/beam # or beam.smp
+%%  sudo setcap -r cap_net_admin=ep /path/to/bin/beam.smp
 %% '''
 %%
 %% Currently, IPv6 addresses are configured by calling ifconfig using sudo
