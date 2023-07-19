@@ -180,16 +180,59 @@ create(_, _) ->
 header(Buf) when byte_size(Buf) > 4 ->
     tunctl:header(Buf).
 
+%% @doc Returns the TUN/TAP device name.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.175.0>}
+%% 2> tuncer:devname(Dev).
+%% <<"tap0">>
+%% '''
 devname(Ref) when is_pid(Ref) ->
     getstate(Ref, dev).
 
+%% @doc Returns an integer holding the interface creation flags.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.175.0>}
+%% 2> tuncer:flags(Dev).
+%% [tap,no_pi]
+%% '''
 flags(Ref) when is_pid(Ref) ->
     getstate(Ref, flag).
 
+%% @doc Get TUN/TAP device file descriptor.
+%%
+%% Get the file descriptor associated with the process. Use getfd/1
+%% with read/1,2 and write/2 to interact directly with the tuntap device
+%% (bypassing the gen_server).
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.175.0>}
+%% 2> tuncer:getfd(Dev).
+%% 22
+%% '''
 getfd(Ref) when is_pid(Ref) ->
     getstate(Ref, fd).
 
 %% @doc Remove the TUN/TAP interface.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.175.0>}
+%% 2> tuncer:destroy(Dev).
+%% ok
+%% '''
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy, infinity).
 
