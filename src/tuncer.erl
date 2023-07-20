@@ -72,6 +72,12 @@
     code_change/3
 ]).
 
+-type dev() :: pid().
+
+-export_type([
+    dev/0
+]).
+
 -record(state, {
     % false, port
     port,
@@ -190,6 +196,7 @@ header(Buf) when byte_size(Buf) > 4 ->
 %% 2> tuncer:devname(Dev).
 %% <<"tap0">>
 %% '''
+-spec devname(dev()) -> binary().
 devname(Ref) when is_pid(Ref) ->
     getstate(Ref, dev).
 
@@ -203,6 +210,7 @@ devname(Ref) when is_pid(Ref) ->
 %% 2> tuncer:flags(Dev).
 %% [tap,no_pi]
 %% '''
+-spec flags(dev()) -> integer().
 flags(Ref) when is_pid(Ref) ->
     getstate(Ref, flag).
 
@@ -220,6 +228,7 @@ flags(Ref) when is_pid(Ref) ->
 %% 2> tuncer:getfd(Dev).
 %% 22
 %% '''
+-spec getfd(dev()) -> integer().
 getfd(Ref) when is_pid(Ref) ->
     getstate(Ref, fd).
 
@@ -233,18 +242,85 @@ getfd(Ref) when is_pid(Ref) ->
 %% 2> tuncer:destroy(Dev).
 %% ok
 %% '''
+-spec destroy(dev()) -> ok.
 destroy(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, destroy, infinity).
 
+%% @doc Set the interface to exist after the Erlang process exits.
+%%
+%% == Support ==
+%%
+%% * Linux
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.201.0>}
+%% 2> tuncer:persist(Dev, true).
+%% ok
+%% '''
+-spec persist(dev(), boolean()) -> ok | {error, file:posix()}.
 persist(Ref, Bool) when is_pid(Ref), is_boolean(Bool) ->
     gen_server:call(Ref, {persist, Bool}, infinity).
 
+%% @doc Set the UID owning the interface.
+%%
+%% == Support ==
+%%
+%% * Linux
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.201.0>}
+%% 2> tuncer:owner(Dev, 1000).
+%% ok
+%% '''
+-spec owner(dev(), integer()) -> ok | {error, file:posix()}.
 owner(Ref, Owner) when is_pid(Ref), is_integer(Owner) ->
     gen_server:call(Ref, {owner, Owner}, infinity).
 
+%% @doc Set the GID owning the interface.
+%%
+%% == Support ==
+%%
+%% * Linux
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.201.0>}
+%% 2> tuncer:group(Dev, 1000).
+%% ok
+%% '''
+-spec group(dev(), integer()) -> ok | {error, file:posix()}.
 group(Ref, Group) when is_pid(Ref), is_integer(Group) ->
     gen_server:call(Ref, {group, Group}, infinity).
 
+%% @doc Configure a TUN/TAP interface using the default netmask and broadcast for the network.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create().
+%% {ok,<0.201.0>}
+%% 2> tuncer:up(Dev, "127.8.8.8").
+%% ok
+%% '''
+%%
+%% ```
+%% # ip a show dev tap0
+%% 7: tap0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 1000
+%%    link/ether 6e:fb:29:46:df:00 brd ff:ff:ff:ff:ff:ff
+%%    inet 127.8.8.8/32 brd 127.255.255.255 scope host tap0
+%%    valid_lft forever preferred_lft forever
+%%    inet6 fe80::6cfb:29ff:fe46:df00/64 scope link
+%%    valid_lft forever preferred_lft forever
+%% '''
+-spec up(dev(), inet:socket_address() | inet:hostname()) -> ok | {error, file:posix()}.
 up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     case inet_parse:address(Addr) of
         {ok, IPv4} -> up(Ref, IPv4);
@@ -253,6 +329,7 @@ up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
 up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {up, Addr}, infinity).
 
+%% @doc Configure a TUN/TAP interface.
 up(Ref, Addr, Mask) when is_pid(Ref), is_list(Addr), Mask >= 0, Mask =< 32 ->
     case inet_parse:address(Addr) of
         {ok, IPv4} -> up(Ref, IPv4, Mask);
