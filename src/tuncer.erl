@@ -73,9 +73,11 @@
 ]).
 
 -type dev() :: pid().
+-type fd() :: integer().
 
 -export_type([
-    dev/0
+    dev/0,
+    fd/0
 ]).
 
 -record(state, {
@@ -330,6 +332,7 @@ up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {up, Addr}, infinity).
 
 %% @doc Configure a TUN/TAP interface.
+-spec up(dev(), inet:socket_address() | inet:hostname(), 0..32) -> ok | {error, file:posix()}.
 up(Ref, Addr, Mask) when is_pid(Ref), is_list(Addr), Mask >= 0, Mask =< 32 ->
     case inet_parse:address(Addr) of
         {ok, IPv4} -> up(Ref, IPv4, Mask);
@@ -338,6 +341,13 @@ up(Ref, Addr, Mask) when is_pid(Ref), is_list(Addr), Mask >= 0, Mask =< 32 ->
 up(Ref, Addr, Mask) when is_pid(Ref), is_tuple(Addr), Mask >= 0, Mask =< 32 ->
     gen_server:call(Ref, {up, Addr, Mask}, infinity).
 
+%% @doc Configure the remote address for a TUN/TAP interface in point-to-point mode.
+%%
+%% == Support ==
+%%
+%% * Linux (IPv4 addresses only)
+%%
+-spec dstaddr(dev(), inet:socket_address() | inet:hostname()) -> ok | {error, file:posix()}.
 dstaddr(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     case inet_parse:address(Addr) of
         {ok, IP} ->
@@ -348,6 +358,13 @@ dstaddr(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
 dstaddr(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {dstaddr, Addr}, infinity).
 
+%% @doc Configure the broadcast address for a TUN/TAP interface.
+%%
+%% == Support ==
+%%
+%% * Linux (IPv4 addresses only)
+%%
+-spec broadcast(dev(), inet:socket_address() | inet:hostname()) -> ok | {error, file:posix()}.
 broadcast(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     case inet_parse:address(Addr) of
         {ok, IP} ->
@@ -358,6 +375,8 @@ broadcast(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
 broadcast(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {broadcast, Addr}, infinity).
 
+%% @doc Unconfigure a TUN/TAP interface.
+-spec down(dev()) -> ok | {error, file:posix()}.
 down(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, down, infinity).
 
@@ -369,12 +388,18 @@ mtu(Ref) when is_pid(Ref) ->
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}, infinity).
 
+%% @doc Read data from the tuntap interface.
+-spec read(fd()) -> {ok, binary()} | {error, file:posix()}.
 read(FD) ->
     read(FD, 16#FFFF).
 
+%% @doc Read data from the tuntap interface.
+-spec read(fd(), integer()) -> {ok, binary()} | {error, file:posix()}.
 read(FD, Len) when is_integer(FD), is_integer(Len) ->
     procket:read(FD, Len).
 
+%% @doc Write data to the tuntap interface.
+-spec write(fd(), binary()) -> ok | {error, file:posix()}.
 write(FD, Data) when is_integer(FD), is_binary(Data) ->
     procket:write(FD, Data).
 
