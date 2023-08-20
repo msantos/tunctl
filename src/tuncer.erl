@@ -100,7 +100,7 @@
 %%% Exports
 %%--------------------------------------------------------------------
 
-%% @doc Create tap0.
+%% @doc Create the tap0 device.
 %%
 %% == Examples ==
 %%
@@ -138,7 +138,7 @@ create(Ifname) ->
 
 %% @doc Create a tuntap device.
 %%
-%%  Device is the TUN/TAP interface name. If an interface name is empty,
+%%  Device is the TUN/TAP device name. If a device name is empty,
 %%  the TUN/TAP driver will choose one (for tap devices,
 %%  starting from `tap0'; for tun devices, beginning from `tun0').
 %%
@@ -185,10 +185,27 @@ create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
 create(_, _) ->
     {error, badargs}.
 
+%% @doc Parse TUN/TAP packet header.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> {ok, Bin} = tuncer:recv(Dev).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,247,188,77,
+%%       238,78,171,184,107,255,2,0,...>>}
+%% 4> tuncer:header(Bin).
+%% {tun_pi,96,0,
+%%         <<0,8,58,255,254,128,0,0,0,0,0,0,247,188,77,238,78,171,
+%%           184,107,255,2,0,0,0,...>>}
+%% '''
 header(Buf) when byte_size(Buf) > 4 ->
     tunctl:header(Buf).
 
-%% @doc Returns the TUN/TAP device name.
+%% @doc Get the TUN/TAP device name.
 %%
 %% == Examples ==
 %%
@@ -234,7 +251,7 @@ flags(Ref) when is_pid(Ref) ->
 getfd(Ref) when is_pid(Ref) ->
     getstate(Ref, fd).
 
-%% @doc Remove the TUN/TAP interface.
+%% @doc Remove the TUN/TAP device.
 %%
 %% == Examples ==
 %%
@@ -302,7 +319,7 @@ owner(Ref, Owner) when is_pid(Ref), is_integer(Owner) ->
 group(Ref, Group) when is_pid(Ref), is_integer(Group) ->
     gen_server:call(Ref, {group, Group}, infinity).
 
-%% @doc Configure a TUN/TAP interface using the default netmask and broadcast for the network.
+%% @doc Configure a TUN/TAP device using the default netmask and broadcast for the network.
 %%
 %% == Examples ==
 %%
@@ -331,7 +348,25 @@ up(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
 up(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {up, Addr}, infinity).
 
-%% @doc Configure a TUN/TAP interface.
+%% @doc Configure a TUN/TAP device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.197.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1", 24).
+%% ok
+%% '''
+%%
+%% ```
+%% 16: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 500
+%%     link/none
+%%     inet 10.1.1.1/24 scope global tun0
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::5472:aa66:7afa:64b9/64 scope link stable-privacy
+%%        valid_lft forever preferred_lft forever
+%% '''
 -spec up(dev(), inet:socket_address() | inet:hostname(), 0..32) -> ok | {error, file:posix()}.
 up(Ref, Addr, Mask) when is_pid(Ref), is_list(Addr), Mask >= 0, Mask =< 32 ->
     case inet_parse:address(Addr) of
@@ -341,12 +376,32 @@ up(Ref, Addr, Mask) when is_pid(Ref), is_list(Addr), Mask >= 0, Mask =< 32 ->
 up(Ref, Addr, Mask) when is_pid(Ref), is_tuple(Addr), Mask >= 0, Mask =< 32 ->
     gen_server:call(Ref, {up, Addr, Mask}, infinity).
 
-%% @doc Configure the remote address for a TUN/TAP interface in point-to-point mode.
+%% @doc Configure the remote address for a TUN/TAP device in point-to-point mode.
 %%
 %% == Support ==
 %%
 %% * Linux (IPv4 addresses only)
 %%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.197.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:dstaddr(Dev, "10.1.1.2").
+%% ok
+%% '''
+%%
+%% ```
+%% $ ip a show tun0
+%% 4: tun0: <POINTOPOINT,MULTICAST,NOARP,NOTRAILERS,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 500
+%%     link/none
+%%     inet 10.1.1.1 peer 10.1.1.2/32 scope global tun0
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::e0f7:c90f:e2d8:91e8/64 scope link stable-privacy
+%%        valid_lft forever preferred_lft forever
+%% '''
 -spec dstaddr(dev(), inet:socket_address() | inet:hostname()) -> ok | {error, file:posix()}.
 dstaddr(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     case inet_parse:address(Addr) of
@@ -358,12 +413,31 @@ dstaddr(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
 dstaddr(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {dstaddr, Addr}, infinity).
 
-%% @doc Configure the broadcast address for a TUN/TAP interface.
+%% @doc Configure the broadcast address for a TUN/TAP device.
 %%
 %% == Support ==
 %%
 %% * Linux (IPv4 addresses only)
 %%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:broadcast(Dev, "10.1.1.3").
+%% ok
+%% '''
+%%
+%% ```
+%% 6: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 500
+%%     link/none
+%%     inet 10.1.1.1/32 brd 10.1.1.3 scope global tun0
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::9d37:9d1:efba:75a1/64 scope link stable-privacy
+%%        valid_lft forever preferred_lft forever
+%% '''
 -spec broadcast(dev(), inet:socket_address() | inet:hostname()) -> ok | {error, file:posix()}.
 broadcast(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
     case inet_parse:address(Addr) of
@@ -375,43 +449,169 @@ broadcast(Ref, Addr) when is_pid(Ref), is_list(Addr) ->
 broadcast(Ref, Addr) when is_pid(Ref), is_tuple(Addr) ->
     gen_server:call(Ref, {broadcast, Addr}, infinity).
 
-%% @doc Unconfigure a TUN/TAP interface.
+%% @doc Unconfigure a TUN/TAP device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:down(Dev).
+%% ok
+%% '''
 -spec down(dev()) -> ok | {error, file:posix()}.
 down(Ref) when is_pid(Ref) ->
     gen_server:call(Ref, down, infinity).
 
+%% @doc Get the MTU (maximum transmission unit) for the TUN/TAP device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:mtu(Dev).
+%% 1500
+%% '''
 mtu(Ref) when is_pid(Ref) ->
     Dev = binary_to_list(devname(Ref)),
     {ok, MTU} = inet:ifget(Dev, [mtu]),
     proplists:get_value(mtu, MTU).
 
+%% @doc Set the MTU (maximum transmission unit) for the TUN/TAP device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:mtu(Dev).
+%% 1500
+%% 4> tuncer:mtu(Dev, 1400).
+%% {ok,22,<<"tun0">>}
+%% 5> tuncer:mtu(Dev).
+%% 1400
+%% '''
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}, infinity).
 
-%% @doc Read data from the tuntap interface.
+%% @doc Read data from the tuntap device file descriptor.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.197.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> FD = tuncer:getfd(Dev).
+%% 22
+%% 4> tuncer:read(FD).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,36,14,228,
+%%       30,140,106,15,112,255,2,0,...>>}
+%% '''
 -spec read(fd()) -> {ok, binary()} | {error, file:posix()}.
 read(FD) ->
     read(FD, 16#FFFF).
 
-%% @doc Read data from the tuntap interface.
+%% @doc Read up to the specified number of bytes from the tuntap device file
+%% descriptor.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.197.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> FD = tuncer:getfd(Dev).
+%% 22
+%% 4> tuncer:read(FD, 16).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0>>}
+%% '''
 -spec read(fd(), integer()) -> {ok, binary()} | {error, file:posix()}.
 read(FD, Len) when is_integer(FD), is_integer(Len) ->
     procket:read(FD, Len).
 
-%% @doc Write data to the tuntap interface.
+%% @doc Write data to the tuntap device file descriptor.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> FD = tuncer:getfd(Dev).
+%% 22
+%% 4> {ok, Data} = tuncer:read(FD, 16).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0>>}
+%% 6> tuncer:write(FD, Data).
+%% ok
+%% '''
 -spec write(fd(), binary()) -> ok | {error, file:posix()}.
 write(FD, Data) when is_integer(FD), is_binary(Data) ->
     procket:write(FD, Data).
 
+%% @doc Write data to the tuntap device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> {ok, Data} = tuncer:recv(Dev).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,89,201,218,
+%%       161,25,116,199,243,255,2,0,...>>}
+%% 4> tuncer:send(Dev, Data).
+%% ok
+%% '''
 send(Ref, Data) when is_pid(Ref), is_binary(Data) ->
     gen_server:call(Ref, {send, Data}, infinity).
 
+%% @doc Read data to the tuntap device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> {ok, D} = tuncer:recv(Dev).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,89,201,218,
+%%       161,25,116,199,243,255,2,0,...>>}
+%% '''
 recv(Ref) ->
     recv(Ref, 16#FFFF).
 
+%% @doc Read up to the specified number of bytes from the tuntap device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:recv(Dev, 16).
+%% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0>>}
+%% '''
 recv(Ref, Len) when is_pid(Ref), is_integer(Len) ->
     gen_server:call(Ref, {recv, Len}, infinity).
 
+%% @doc Change the controlling process of the TUN/TAP device.
+%%
+%% Change the process owning the socket. Allows another process to
+%% send and receive packets from the TUN/TAP device.
 controlling_process(Ref, Pid) when is_pid(Ref), is_pid(Pid) ->
     Owner = self(),
     case gen_server:call(Ref, {state, [pid, port]}, infinity) of
@@ -434,9 +634,41 @@ controlling_process_1(Ref, Pid, Mode, ok) ->
 controlling_process_1(_Ref, _Pid, _Mode, Error) ->
     Error.
 
+%% @doc Set TUN/TAP device option.
+%%
+%% setopt/2 currently supports toggling `active' mode for performing
+%% flow control.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, Dev} = tuncer:create("tun0", [tun, no_pi, {active, false}]).
+%% {ok,<0.205.0>}
+%% 2> tuncer:up(Dev, "10.1.1.1").
+%% ok
+%% 3> tuncer:setopt(Dev, {active, true}).
+%% ok
+%% 4> tuncer:setopt(Dev, {active, false}).
+%% ok
+%% 5> flush().
+%% Shell got {tuntap,<0.205.0>,
+%%                   <<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,44,191,1,21,92,
+%%                     149,243,132,255,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,133,0,255,
+%%                     72,0,0,0,0>>}
+%% Shell got {tuntap,<0.205.0>,
+%%                   <<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,44,191,1,21,92,
+%%                     149,243,132,255,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,133,0,255,
+%%                     72,0,0,0,0>>}
+%% Shell got {tuntap,<0.205.0>,
+%%                   <<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,44,191,1,21,92,
+%%                     149,243,132,255,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,133,0,255,
+%%                     72,0,0,0,0>>}
+%% ok
+%% '''
 setopt(Ref, Option) when is_tuple(Option) ->
     gen_server:call(Ref, {setopt, Option}, infinity).
 
+%% @private
 start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
     Pid = self(),
     gen_server:start_link(?MODULE, [Pid, Ifname, Opt], []).
@@ -444,6 +676,8 @@ start_link(Ifname, Opt) when is_binary(Ifname), is_list(Opt) ->
 %%--------------------------------------------------------------------
 %%% Callbacks
 %%--------------------------------------------------------------------
+
+%% @private
 init([Pid, Ifname, Flag]) ->
     process_flag(trap_exit, true),
 
@@ -473,6 +707,7 @@ init([Pid, Ifname, Flag]) ->
 %%
 %% retrieve/modify gen_server state
 %%
+%% @private
 handle_call({state, Field}, _From, State) ->
     {reply, state(Field, State), State};
 handle_call({controlling_process, Owner}, {Owner, _}, #state{pid = Owner} = State) ->
@@ -551,12 +786,14 @@ handle_call({mtu, MTU}, _From, #state{dev = Dev, fd = FD} = State) ->
 handle_call(destroy, _From, State) ->
     {stop, normal, ok, State}.
 
+%% @private
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%
 %% {active, true} mode
 %%
+%% @private
 handle_info({'EXIT', _, normal}, State) ->
     {noreply, State};
 handle_info({'EXIT', _, _}, #state{port = false} = State) ->
@@ -583,6 +820,7 @@ handle_info(Info, State) ->
     error_logger:error_report([wtf, Info]),
     {noreply, State}.
 
+%% @private
 terminate(_Reason, #state{fd = FD, dev = Dev, port = Port, persist = Persist}) ->
     terminate_port(Port),
     ok = tun_down(Dev, Persist),
@@ -598,6 +836,7 @@ tun_down(_Dev, true = _Persist) ->
 tun_down(Dev, false = _Persist) ->
     tunctl:down(Dev).
 
+%% @private
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
