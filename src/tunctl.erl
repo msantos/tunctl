@@ -137,43 +137,196 @@
     cmd/1
 ]).
 
+-type fd() :: integer().
+-type uint16_t() :: 0..16#ffff.
+
+-export_type([
+    fd/0,
+		uint16_t/0
+]).
+
 %%--------------------------------------------------------------------
 %%% Exports
 %%--------------------------------------------------------------------
+
+%% @doc Create the tap0 device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> tunctl:create().
+%% {ok,22,<<"tap0">>}
+%% '''
+%%
+%% ```
+%% $ ip link show tap0
+%% 17: tap0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+%%     link/ether 16:ae:f3:36:be:3f brd ff:ff:ff:ff:ff:ff
+%% '''
+-spec create() -> {ok, fd(), binary()} | {error, file:posix()}.
 create() ->
     create(<<>>).
 
+%% @doc Create a named tap device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% '''
+%%
+%% ```
+%% $ ip link show tuncer
+%% 18: tuncer: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+%%     link/ether 9e:bf:d9:4a:06:72 brd ff:ff:ff:ff:ff:ff
+%% '''
+-spec create(binary()) -> {ok, fd(), binary()} | {error, file:posix()}.
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
 
+%% @doc Create a tuntap device.
+%%
+%%  Device is the TUN/TAP device name. If a device name is empty,
+%%  the TUN/TAP driver will choose one (for tap devices,
+%%  starting from `tap0'; for tun devices, beginning from `tun0').
+%%
+%%  Options contains a list of flags.
+%%
+%%      tun: create a tun interface
+%%
+%%      tap: create a tap interface
+%%
+%%      no_pi: do not prepend the data with a 4 byte header describing
+%%             the physical interface
+%%
+%%  The options default to `[tap, no_pi, {active, false}]'.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> tunctl:create(<<"tuncer">>, [tun, no_pi]).
+%% {ok,22,<<"tuncer">>}
+%% '''
+%%
+%% ```
+%% $ ip link show tun0
+%% 19: tuncer: <POINTOPOINT,MULTICAST,NOARP> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 500
+%%     link/none
+%% '''
+-spec create(binary(), proplists:proplist()) -> {ok, fd(), binary()} | {error, file:posix()}.
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     Module = os(),
     Module:create(Ifname, Opt).
 
+%% @doc Set the interface to exist after the Erlang process exits.
+%%
+%% == Support ==
+%%
+%% * Linux
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>, [tun, no_pi]).
+%% {ok,22,<<"tuncer">>}
+%% 3> tunctl:persist(FD, true).
+%% ok
+%% '''
+-spec persist(fd(), boolean()) -> ok | {error, file:posix()}.
 persist(FD, Status) ->
     Module = os(),
     Module:persist(FD, bool(Status)).
 
+%% @doc Set the UID owning the interface.
 %%
-%% Change the owner/group of the tun device
+%% == Support ==
 %%
+%% * Linux
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:owner(FD, 1000).
+%% ok
+%% '''
+-spec owner(fd(), integer()) -> ok | {error, file:posix()}.
 owner(FD, Owner) when is_integer(FD), is_integer(Owner) ->
     Module = os(),
     Module:owner(FD, Owner).
 
+%% @doc Set the GID owning the interface.
+%%
+%% == Support ==
+%%
+%% * Linux
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:group(FD, 1000).
+%% ok
+%% '''
+-spec group(fd(), integer()) -> ok | {error, file:posix()}.
 group(FD, Group) when is_integer(FD), is_integer(Group) ->
     Module = os(),
     Module:group(FD, Group).
 
+
+%% @doc Configure a TUN/TAP device using the default netmask and broadcast for the network.
 %%
-%% Configure the interface just like ifconfig except
-%% with fewer features and no error checking
+%% Configure the interface just like ifconfig except with fewer features
+%% and no error checking.
 %%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,8}).
+%% ok
+%% '''
+%%
+%% ```
+%% $ ip a show dev tuncer
+%% 24: tuncer: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 1000
+%%     link/ether 52:0a:b2:71:f2:cd brd ff:ff:ff:ff:ff:ff
+%%     inet 127.8.8.8/32 brd 127.255.255.255 scope host tuncer
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::500a:b2ff:fe71:f2cd/64 scope link
+%%        valid_lft forever preferred_lft forever
+%% '''
+-spec up(binary(), inet:socket_address()) -> ok | {error, file:posix()}.
 up(Dev, {A, B, C, D}) ->
     up(Dev, {A, B, C, D}, 32);
 up(Dev, {A, B, C, D, E, F, G, H}) ->
     up(Dev, {A, B, C, D, E, F, G, H}, 64).
 
+%% @doc Configure a TUN/TAP device with a netmask.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,8}, 24).
+%% ok
+%% '''
+%%
+%% ```
+%% $ ip a show dev tuncer
+%% 25: tuncer: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 1000
+%%     link/ether 5e:6a:6a:a2:67:0f brd ff:ff:ff:ff:ff:ff
+%%     inet 127.8.8.8/24 brd 127.8.8.255 scope host tuncer
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::5c6a:6aff:fea2:670f/64 scope link
+%%        valid_lft forever preferred_lft forever
+%% '''
+-spec up(binary(), inet:socket_address(), 0..32) -> ok | {error, file:posix()}.
 up(Dev, Addr, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
     Module = os(),
     case Module of
@@ -181,6 +334,33 @@ up(Dev, Addr, Mask) when byte_size(Dev) < ?IFNAMSIZ, is_integer(Mask) ->
         _ -> os_up(Dev, Addr, Mask)
     end.
 
+%% @doc Configure the remote address for a TUN/TAP device in point-to-point mode.
+%%
+%% == Support ==
+%%
+%% * Linux (IPv4 addresses only)
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,1}).
+%% ok
+%% 3> tunctl:dstaddr(Dev, {127,8,8,2}).
+%% ok
+%% '''
+%%
+%% ```
+%% $ ip a show tun0
+%% 26: tuncer: <BROADCAST,MULTICAST,NOTRAILERS,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 1000
+%%     link/ether 8a:0f:74:4e:5e:1c brd ff:ff:ff:ff:ff:ff
+%%     inet 127.8.8.1 peer 127.8.8.2/32 brd 127.255.255.255 scope host tuncer
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::880f:74ff:fe4e:5e1c/64 scope link
+%%        valid_lft forever preferred_lft forever
+%% '''
+-spec dstaddr(binary(), inet:socket_address()) -> ok | {error, file:posix()}.
 dstaddr(Dev, Addr) when byte_size(Dev) < ?IFNAMSIZ ->
     Module = os(),
     case Module of
@@ -191,6 +371,19 @@ dstaddr(Dev, Addr) when byte_size(Dev) < ?IFNAMSIZ ->
             {error, enoent}
     end.
 
+%% @doc Set the MTU (maximum transmission unit) for the TUN/TAP device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,1}).
+%% ok
+%% 3> tunctl:mtu(FD, Dev, 1400).
+%% {ok,22,<<"tuncer">>}
+%% '''
+-spec mtu(fd(), binary(), integer()) -> {ok, tunctl:fd(), binary()} | {error, file:posix()}.
 mtu(FD, Ifname, MTU) ->
     Module = os(),
     case Module of
@@ -201,6 +394,32 @@ mtu(FD, Ifname, MTU) ->
             {error, enoent}
     end.
 
+%% @doc Configure the broadcast address for a TUN/TAP device.
+%%
+%% == Support ==
+%%
+%% * Linux (IPv4 addresses only)
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,1}).
+%% ok
+%% 3> tunctl:broadcast(Dev, {127,8,8,3}).
+%% ok
+%% '''
+%%
+%% ```
+%% 28: tuncer: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 1000
+%%     link/ether 6e:f2:e9:31:d4:3a brd ff:ff:ff:ff:ff:ff
+%%     inet 127.8.8.1/32 brd 127.8.8.3 scope host tuncer
+%%        valid_lft forever preferred_lft forever
+%%     inet6 fe80::6cf2:e9ff:fe31:d43a/64 scope link
+%%        valid_lft forever preferred_lft forever
+%% '''
+-spec broadcast(binary(), inet:socket_address()) -> ok | {error, file:posix()}.
 broadcast(Dev, Addr) when byte_size(Dev) < ?IFNAMSIZ ->
     Module = os(),
     case Module of
@@ -211,6 +430,19 @@ broadcast(Dev, Addr) when byte_size(Dev) < ?IFNAMSIZ ->
             {error, enoent}
     end.
 
+%% @doc Unconfigure a TUN/TAP device.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,1}).
+%% ok
+%% 4> tunctl:down(Dev).
+%% ok
+%% '''
+-spec down(binary()) -> ok | {error, file:posix()}.
 down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
     Module = os(),
     case Module of
@@ -218,6 +450,24 @@ down(Dev) when byte_size(Dev) < ?IFNAMSIZ ->
         _ -> os_down(Dev)
     end.
 
+%% @doc Parse TUN/TAP packet header.
+%%
+%% == Examples ==
+%%
+%% ```
+%% 1> {ok, FD, Dev} = tunctl:create(<<"tuncer">>).
+%% {ok,22,<<"tuncer">>}
+%% 2> tunctl:up(Dev, {127,8,8,1}).
+%% ok
+%% 3> {ok, Bin} = procket:read(FD, 1024).
+%% {ok,<<51,51,0,0,0,22,254,45,152,87,204,21,134,221,96,0,0,
+%%       0,0,36,0,1,0,0,0,0,0,...>>}
+%% 4> tunctl:header(Bin).
+%% {tun_pi,13107,0,
+%%         <<0,22,254,45,152,87,204,21,134,221,96,0,0,0,0,36,0,1,0,
+%%           0,0,0,0,0,0,...>>}
+%% '''
+-spec header(binary()) -> {tun_pi, uint16_t(), uint16_t()} | {error, file:posix()}.
 header(Packet) ->
     Module = os(),
     Module:header(Packet).
@@ -225,12 +475,15 @@ header(Packet) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+
+%% @private
 ioctl(FD, Request, Opt) ->
     case procket:ioctl(FD, Request, Opt) of
         {ok, _} -> ok;
         Error -> Error
     end.
 
+%% @private
 cmd(Cmd) ->
     case os:cmd(Cmd) of
         [] -> ok;

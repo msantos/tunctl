@@ -73,11 +73,9 @@
 ]).
 
 -type dev() :: pid().
--type fd() :: integer().
 
 -export_type([
-    dev/0,
-    fd/0
+    dev/0
 ]).
 
 -record(state, {
@@ -202,6 +200,7 @@ create(_, _) ->
 %%         <<0,8,58,255,254,128,0,0,0,0,0,0,247,188,77,238,78,171,
 %%           184,107,255,2,0,0,0,...>>}
 %% '''
+-spec header(binary()) -> {tun_pi, tunctl:uint16_t(), tunctl:uint16_t()} | {error, file:posix()}.
 header(Buf) when byte_size(Buf) > 4 ->
     tunctl:header(Buf).
 
@@ -477,12 +476,13 @@ down(Ref) when is_pid(Ref) ->
 %% 3> tuncer:mtu(Dev).
 %% 1500
 %% '''
+-spec mtu(dev()) -> integer().
 mtu(Ref) when is_pid(Ref) ->
     Dev = binary_to_list(devname(Ref)),
     {ok, MTU} = inet:ifget(Dev, [mtu]),
     proplists:get_value(mtu, MTU).
 
-%% @doc Set the MTU (maximum transmission unit) for the TUN/TAP device.
+%r @doc Set the MTU (maximum transmission unit) for the TUN/TAP device.
 %%
 %% == Examples ==
 %%
@@ -498,6 +498,7 @@ mtu(Ref) when is_pid(Ref) ->
 %% 5> tuncer:mtu(Dev).
 %% 1400
 %% '''
+-spec mtu(dev(), integer()) -> {ok, tunctl:fd(), binary()} | {error, file:posix()}.
 mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
     gen_server:call(Ref, {mtu, MTU}, infinity).
 
@@ -516,7 +517,7 @@ mtu(Ref, MTU) when is_pid(Ref), is_integer(MTU) ->
 %% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0,36,14,228,
 %%       30,140,106,15,112,255,2,0,...>>}
 %% '''
--spec read(fd()) -> {ok, binary()} | {error, file:posix()}.
+-spec read(tunctl:fd()) -> {ok, binary()} | {error, file:posix()}.
 read(FD) ->
     read(FD, 16#FFFF).
 
@@ -535,7 +536,7 @@ read(FD) ->
 %% 4> tuncer:read(FD, 16).
 %% {ok,<<96,0,0,0,0,8,58,255,254,128,0,0,0,0,0,0>>}
 %% '''
--spec read(fd(), integer()) -> {ok, binary()} | {error, file:posix()}.
+-spec read(tunctl:fd(), integer()) -> {ok, binary()} | {error, file:posix()}.
 read(FD, Len) when is_integer(FD), is_integer(Len) ->
     procket:read(FD, Len).
 
@@ -555,7 +556,7 @@ read(FD, Len) when is_integer(FD), is_integer(Len) ->
 %% 6> tuncer:write(FD, Data).
 %% ok
 %% '''
--spec write(fd(), binary()) -> ok | {error, file:posix()}.
+-spec write(tunctl:fd(), binary()) -> ok | {error, file:posix()}.
 write(FD, Data) when is_integer(FD), is_binary(Data) ->
     procket:write(FD, Data).
 
@@ -803,7 +804,7 @@ handle_info(
     #state{port = Port, pid = Pid, fd = FD, dev = Dev, persist = Persist} = State
 ) ->
     Pid ! {tuntap_error, self(), Error},
-    case Persist of
+    _ = case Persist of
         true ->
             ok;
         false ->
