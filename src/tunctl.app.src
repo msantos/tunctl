@@ -1,6 +1,11 @@
 {application, tunctl, [
     {description, "TUN/TAP interface"},
+    {vsn, "0.3.3"},
+    {registered, []},
     {applications, [kernel, stdlib]},
     {included_applications, [procket]},
-    {vsn, "0.3.2"}
+    {env, []},
+    {modules, []},
+    {licenses, ["BSD-3-Clause"]},
+    {links, [{"Github", "https://github.com/msantos/tunctl"}]}
 ]}.
