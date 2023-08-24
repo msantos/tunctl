@@ -1,4 +1,4 @@
-%%% Copyright (c) 2011-2022 Michael Santos <michael.santos@gmail.com>. All
+%%% Copyright (c) 2011-2023 Michael Santos <michael.santos@gmail.com>. All
 %%% rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -module(tunctl_freebsd).
+-behaviour(tunctl).
 
 %% Uses the legacy tun/tap interface (rather than interface cloning)
 %% net.link.(tun|tap).devfs_cloning must be non-zero to use.

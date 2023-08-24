@@ -117,6 +117,11 @@
 -include_lib("procket/include/ioctl.hrl").
 -include_lib("procket/include/procket.hrl").
 
+-callback create(binary(), proplists:proplist()) -> {ok, fd(), binary()} | {error, file:posix()}.
+-callback persist(fd(), boolean()) -> ok | {error, file:posix()}.
+-callback owner(fd(), integer()) -> ok | {error, file:posix()}.
+-callback group(fd(), integer()) -> ok | {error, file:posix()}.
+
 -export([
     create/0, create/1, create/2,
     persist/2,
