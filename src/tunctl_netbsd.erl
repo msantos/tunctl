@@ -1,4 +1,4 @@
-%%% Copyright (c) 2011-2022 Michael Santos <michael.santos@gmail.com>. All
+%%% Copyright (c) 2011-2023 Michael Santos <michael.santos@gmail.com>. All
 %%% rights reserved.
 %%% Copyright (c) 2013, YAMAMOTO Takashi
 %%% All rights reserved.
@@ -30,6 +30,7 @@
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -module(tunctl_netbsd).
+-behaviour(tunctl).
 
 %% NOTE: On NetBSD, tap(4) and tun(4) are separate drivers.
 %% The former, which this module deals with, is always "no_pi".
