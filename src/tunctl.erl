@@ -34,82 +34,6 @@
 %% a device name, others a file descriptor. It is up to the caller to make
 %% sure the file descriptors are closed (the device will disappear after
 %% the fd is closed if the device is not persistent).
-%%
-%% ## PRIVILEGES
-%%
-%% ### Linux
-%%
-%% For IPv4 addresses, beam needs to have privileges to configure interfaces.
-%%
-%% To add cap_net_admin capabilities:
-%%
-%% ```
-%%  sudo setcap cap_net_admin=ep /path/to/bin/beam.smp
-%% '''
-%%
-%% To check the privileges:
-%%
-%% ```
-%%  getcap /path/to/bin/beam.smp
-%% '''
-%%
-%% To remove the privileges:
-%%
-%% ```
-%%  sudo setcap -r cap_net_admin=ep /path/to/bin/beam.smp
-%% '''
-%%
-%% Currently, IPv6 addresses are configured by calling ifconfig using sudo
-%% (see below).
-%%
-%% ### Mac OS X
-%%
-%% Requires the tun/tap driver from:
-%%
-%% http://tuntaposx.sourceforge.net/
-%%
-%% Allow the user running tunctl to call ifconfig using sudo:
-%%
-%% ```
-%% sudo visudo
-%% youruser ALL=NOPASSWD: /sbin/ifconfig tap*
-%% youruser ALL=NOPASSWD: /sbin/ifconfig tun*
-%% '''
-%%
-%% ### FreeBSD
-%%
-%% tunctl uses the FreeBSD tuntap legacy interface.
-%%
-%% 1. Ensure the tap device kernel module is loaded:
-%%
-%%    ```
-%%     $ kldstat
-%%     $ kldload if_tap
-%%    '''
-%%
-%%    If you want the tap driver loaded on boot, add to /boot/loader.conf:
-%%
-%%    ```
-%%     if_tap_load="YES"
-%%    '''
-%%
-%% 2. Check cloning is enabled:
-%%
-%%    ```
-%%     $ sysctl net.link.tun.devfs_cloning
-%%     net.link.tun.devfs_cloning: 1
-%%
-%%     $ sysctl net.link.tap.devfs_cloning
-%%     net.link.tap.devfs_cloning: 1
-%%    '''
-%%
-%% 3. Allow the user running tunctl to call ifconfig using sudo:
-%%
-%%    ```
-%%     sudo visudo
-%%     youruser ALL=NOPASSWD: /sbin/ifconfig tap*
-%%     youruser ALL=NOPASSWD: /sbin/ifconfig tun*
-%%    '''
 -module(tunctl).
 
 -include("tuntap.hrl").
@@ -147,7 +71,7 @@
 
 -export_type([
     fd/0,
-		uint16_t/0
+    uint16_t/0
 ]).
 
 %%--------------------------------------------------------------------
@@ -280,7 +204,6 @@ owner(FD, Owner) when is_integer(FD), is_integer(Owner) ->
 group(FD, Group) when is_integer(FD), is_integer(Group) ->
     Module = os(),
     Module:group(FD, Group).
-
 
 %% @doc Configure a TUN/TAP device using the default netmask and broadcast for the network.
 %%

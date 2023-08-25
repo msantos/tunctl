@@ -29,13 +29,19 @@
 %%% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+%% @doc tunctl behaviour for NetBSD.
+%%
+%% NOTE: On NetBSD, tap(4) and tun(4) are separate drivers.
+%% The former, which this module deals with, is always `no_pi'.
+%%
+%% References:
+%%
+%% * http://netbsd.gw.com/cgi-bin/man-cgi?tap
+%%
+%% * http://netbsd.gw.com/cgi-bin/man-cgi?tun
 -module(tunctl_netbsd).
 -behaviour(tunctl).
-
-%% NOTE: On NetBSD, tap(4) and tun(4) are separate drivers.
-%% The former, which this module deals with, is always "no_pi".
-%% http://netbsd.gw.com/cgi-bin/man-cgi?tap
-%% http://netbsd.gw.com/cgi-bin/man-cgi?tun
 
 -include("tuntap.hrl").
 

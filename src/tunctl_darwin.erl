@@ -27,6 +27,20 @@
 %%% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+%% @doc tunctl behaviour for Mac OS X.
+%%
+%% Requires the tun/tap driver from:
+%%
+%% http://tuntaposx.sourceforge.net/
+%%
+%% Allow the user running tunctl to call ifconfig using sudo:
+%%
+%% ```
+%% sudo visudo
+%% youruser ALL=NOPASSWD: /sbin/ifconfig tap*
+%% youruser ALL=NOPASSWD: /sbin/ifconfig tun*
+%% '''
 -module(tunctl_darwin).
 -behaviour(tunctl).
 
