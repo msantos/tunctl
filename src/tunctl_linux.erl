@@ -27,6 +27,31 @@
 %%% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+%% @doc tunctl behaviour for Linux.
+%%
+%% For IPv4 addresses, beam needs to have privileges to configure interfaces.
+%%
+%% To add cap_net_admin capabilities:
+%%
+%% ```
+%%  sudo setcap cap_net_admin=ep /path/to/bin/beam.smp
+%% '''
+%%
+%% To check the privileges:
+%%
+%% ```
+%%  getcap /path/to/bin/beam.smp
+%% '''
+%%
+%% To remove the privileges:
+%%
+%% ```
+%%  sudo setcap -r cap_net_admin=ep /path/to/bin/beam.smp
+%% '''
+%%
+%% Currently, IPv6 addresses are configured by calling ifconfig using sudo
+%% (see below).
 -module(tunctl_linux).
 -behaviour(tunctl).
 

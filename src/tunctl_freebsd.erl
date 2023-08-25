@@ -27,11 +27,43 @@
 %%% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 %%% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %%% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+%% @doc tunctl behaviour for FreeBSD.
+%%
+%% tunctl uses the FreeBSD tuntap legacy interface.
+%%
+%% 1. Ensure the tap device kernel module is loaded:
+%%
+%%    ```
+%%     $ kldstat
+%%     $ kldload if_tap
+%%    '''
+%%
+%%    If you want the tap driver loaded on boot, add to /boot/loader.conf:
+%%
+%%    ```
+%%     if_tap_load="YES"
+%%    '''
+%%
+%% 2. Check cloning is enabled:
+%%
+%%    ```
+%%     $ sysctl net.link.tun.devfs_cloning
+%%     net.link.tun.devfs_cloning: 1
+%%
+%%     $ sysctl net.link.tap.devfs_cloning
+%%     net.link.tap.devfs_cloning: 1
+%%    '''
+%%
+%% 3. Allow the user running tunctl to call ifconfig using sudo:
+%%
+%%    ```
+%%     sudo visudo
+%%     youruser ALL=NOPASSWD: /sbin/ifconfig tap*
+%%     youruser ALL=NOPASSWD: /sbin/ifconfig tun*
+%%    '''
 -module(tunctl_freebsd).
 -behaviour(tunctl).
-
-%% Uses the legacy tun/tap interface (rather than interface cloning)
-%% net.link.(tun|tap).devfs_cloning must be non-zero to use.
 
 -include("tuntap.hrl").
 
