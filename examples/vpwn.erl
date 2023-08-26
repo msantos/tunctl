@@ -4,11 +4,11 @@
 %% Usage:
 %%  node2: Start up Erlang on the destination node:
 %%
-%%      ./start.sh -setcookie OMNOMNOM -name node
+%%      erl -pa deps/*/ebin ebin -setcookie OMNOMNOM -name node
 %%
 %%  node1: then on the source node:
 %%
-%%      ./start.sh -setcookie OMNOMNOM -name node
+%%      erl -pa deps/*/ebin ebin -setcookie OMNOMNOM -name node
 %%
 %%      vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
 %%

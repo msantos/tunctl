@@ -37,9 +37,9 @@
 %%
 %% References:
 %%
-%% * http://netbsd.gw.com/cgi-bin/man-cgi?tap
+%% * https://man.netbsd.org/tap.4
 %%
-%% * http://netbsd.gw.com/cgi-bin/man-cgi?tun
+%% * https://man.netbsd.org/tun.4
 -module(tunctl_netbsd).
 -behaviour(tunctl).
 

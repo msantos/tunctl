@@ -359,19 +359,19 @@ protocol.
 Compile vpwn on the source and destination nodes:
 
 ```
-make examples
+erlc -I deps -o ebin examples/*.erl
 ```
 
 Run Erlang on the destination node:
 
 ```
-./start.sh -setcookie OMNOMNOM -name node
+erl -pa deps/*/ebin ebin -setcookie OMNOMNOM -name node
 ```
 
 And on the source node:
 
 ```
-./start.sh -setcookie OMNOMNOM -name node
+erl -pa deps/*/ebin ebin -setcookie OMNOMNOM -name node
 ```
 
 Then start up the tunnel (replace the host name):
