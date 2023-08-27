@@ -1,6 +1,6 @@
 {application, tunctl, [
     {description, "TUN/TAP interface"},
-    {vsn, "0.3.3"},
+    {vsn, "0.3.4"},
     {registered, []},
     {applications, [kernel, stdlib]},
     {included_applications, [procket]},
