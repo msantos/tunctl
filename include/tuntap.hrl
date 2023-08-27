@@ -1,4 +1,4 @@
-%%% Copyright (c) 2011-2022 Michael Santos <michael.santos@gmail.com>. All
+%%% Copyright (c) 2011-2023 Michael Santos <michael.santos@gmail.com>. All
 %%% rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,8 @@
     % 2/native-unsigned-integer-unit:8
     flags,
     % 2/native-unsigned-integer-unit:8
-    proto
+    proto,
+    buf
 }).
 
 -define(TUN_FLT_ALLMULTI, 16#0001).
