@@ -744,7 +744,7 @@ handle_call({send, Data}, _From, #state{port = false, fd = FD} = State) ->
     {reply, Reply, State};
 handle_call({send, Data}, _From, #state{port = Port} = State) ->
     Reply =
-        try erlang:port_command(Port, Data) of
+        try erlang:port_command(Port, Data, [force]) of
             true ->
                 ok
         catch
