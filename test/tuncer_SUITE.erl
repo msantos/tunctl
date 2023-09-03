@@ -64,33 +64,56 @@ ipaddr() ->
 
 init_per_testcase(Test, Config) ->
     {ok, Dev} = tuncer:create(ifname()),
-    [{Test, Dev} | Config].
+    {ok, DevActive} = tuncer:create(ifname(), [tun, no_pi, {active, true}]),
+    [{Test, [Dev, DevActive]} | Config].
 
 end_per_testcase(Test, Config) ->
-    Dev = ?config(Test, Config),
-    ok = tuncer:down(Dev),
+    Devs = ?config(Test, Config),
+    [tuncer:destroy(Dev) || Dev <- Devs],
     Config.
 
 create(_Config) ->
     {ok, Dev} = tuncer:create("tuncer", [tun, no_pi, {active, false}]),
-    tuncer:down(Dev).
+    ok = tuncer:destroy(Dev).
+
+foreach(_, []) ->
+    ok;
+foreach(F, [Dev | Devs]) ->
+    case F(Dev) of
+        ok -> foreach(F, Devs);
+        {ok, _} -> foreach(F, Devs);
+        {error, _} = Error -> {failed, Error}
+    end.
 
 up(Config) ->
-    Dev = ?config(up, Config),
-    tuncer:up(Dev, ipaddr()).
+    Devs = ?config(up, Config),
+    foreach(fun(Dev) -> tuncer:up(Dev, ipaddr()) end, Devs).
 
 recv(Dev) ->
     case tuncer:recv(Dev) of
-        {ok, _} = X -> X;
-        {error, eagain} -> recv(Dev);
-        {error, _} = Error -> Error
+        {ok, _} = X ->
+            X;
+        {error, eagain} ->
+            recv(Dev);
+        {error, einval} ->
+            receive
+                {tuntap, Dev, Bin} -> {ok, Bin};
+                {tuntap_error, Dev, Error} -> {error, Error}
+            end;
+        {error, _} = Error ->
+            Error
     end.
 
 recvsend(Config) ->
-    Dev = ?config(recvsend, Config),
-    ok = tuncer:up(Dev, ipaddr()),
-    {ok, Bin} = recv(Dev),
-    tuncer:send(Dev, Bin).
+    Devs = ?config(recvsend, Config),
+    foreach(
+        fun(Dev) ->
+            ok = tuncer:up(Dev, ipaddr()),
+            {ok, Bin} = recv(Dev),
+            tuncer:send(Dev, Bin)
+        end,
+        Devs
+    ).
 
 read(FD) ->
     case tuncer:read(FD) of
@@ -100,21 +123,36 @@ read(FD) ->
     end.
 
 readwrite(Config) ->
-    Dev = ?config(readwrite, Config),
-    ok = tuncer:up(Dev, ipaddr()),
-    FD = tuncer:getfd(Dev),
-    {ok, Bin} = read(FD),
-    tuncer:write(FD, Bin).
+    Devs = ?config(readwrite, Config),
+    foreach(
+        fun(Dev) ->
+            ok = tuncer:up(Dev, ipaddr()),
+            FD = tuncer:getfd(Dev),
+            {ok, Bin} = read(FD),
+            tuncer:write(FD, Bin)
+        end,
+        Devs
+    ).
 
 dstaddr(Config) ->
-    Dev = ?config(dstaddr, Config),
-    ok = tuncer:up(Dev, "127.241.173.1"),
-    tuncer:dstaddr(Dev, "127.241.173.2").
+    Devs = ?config(dstaddr, Config),
+    foreach(
+        fun(Dev) ->
+            ok = tuncer:up(Dev, "127.241.173.1"),
+            tuncer:dstaddr(Dev, "127.241.173.2")
+        end,
+        Devs
+    ).
 
 broadcast(Config) ->
-    Dev = ?config(broadcast, Config),
-    ok = tuncer:up(Dev, "127.241.174.1"),
-    tuncer:broadcast(Dev, "127.241.174.3").
+    Devs = ?config(broadcast, Config),
+    foreach(
+        fun(Dev) ->
+            ok = tuncer:up(Dev, "127.241.174.1"),
+            tuncer:broadcast(Dev, "127.241.174.3")
+        end,
+        Devs
+    ).
 
 no_os_specific_tests(_Config) ->
     {skip, "No OS specific tests defined"}.
