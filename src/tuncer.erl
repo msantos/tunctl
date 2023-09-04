@@ -73,14 +73,21 @@
 ]).
 
 -type dev() :: pid().
+-type portopt() ::
+    {parallelism, boolean()}
+    | {busy_limits_port, {non_neg_integer(), non_neg_integer()} | disabled}
+    | {busy_limits_msgq, {non_neg_integer(), non_neg_integer()} | disabled}.
 
 -export_type([
-    dev/0
+    dev/0,
+    portopt/0
 ]).
 
 -record(state, {
     % false, port
     port,
+    % port options
+    port_opt :: [portopt()],
     % PID of controlling process
     pid :: pid(),
     % TUN/TAP file descriptor
@@ -687,15 +694,19 @@ init([Pid, Ifname, Flag]) ->
     case tunctl:create(Ifname, Flag) of
         {ok, FD, Dev} ->
             Active = proplists:get_value(active, Flag, false),
+            Port_options = proplists:get_value(port_options, Flag, [
+                {busy_limits_port, disabled}, {busy_limits_msgq, disabled}
+            ]),
 
             Port =
                 case Active of
-                    true -> set_mode(active, FD);
+                    true -> set_mode(active, FD, Port_options);
                     false -> false
                 end,
 
             {ok, #state{
                 port = Port,
+                port_opt = Port_options,
                 pid = Pid,
                 fd = FD,
                 dev = Dev,
@@ -719,8 +730,10 @@ handle_call({controlling_process, Pid}, {Owner, _}, #state{pid = Owner} = State)
     {reply, ok, State#state{pid = Pid}};
 handle_call({controlling_process, _}, _, State) ->
     {reply, {error, not_owner}, State};
-handle_call({setopt, {active, true}}, _From, #state{port = false, fd = FD} = State) ->
-    try set_mode(active, FD) of
+handle_call(
+    {setopt, {active, true}}, _From, #state{port = false, fd = FD, port_opt = Port_opt} = State
+) ->
+    try set_mode(active, FD, Port_opt) of
         Port ->
             {reply, ok, State#state{port = Port}}
     catch
@@ -804,13 +817,14 @@ handle_info(
     #state{port = Port, pid = Pid, fd = FD, dev = Dev, persist = Persist} = State
 ) ->
     Pid ! {tuntap_error, self(), Error},
-    _ = case Persist of
-        true ->
-            ok;
-        false ->
-            _ = tunctl:down(Dev),
-            tunctl:persist(FD, false)
-    end,
+    _ =
+        case Persist of
+            true ->
+                ok;
+            false ->
+                _ = tunctl:down(Dev),
+                tunctl:persist(FD, false)
+        end,
     procket:close(FD),
     {stop, normal, State};
 handle_info({Port, {data, Data}}, #state{port = Port, pid = Pid} = State) ->
@@ -844,8 +858,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-set_mode(active, FD) ->
-    open_port({fd, FD, FD}, [stream, binary]);
+set_mode(active, FD, Opt) ->
+    open_port({fd, FD, FD}, [stream, binary] ++ Opt).
 set_mode(passive, Port) ->
     try erlang:port_close(Port) of
         true ->

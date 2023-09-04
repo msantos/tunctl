@@ -65,7 +65,13 @@ ipaddr() ->
 init_per_testcase(Test, Config) ->
     {ok, Dev} = tuncer:create(ifname()),
     {ok, DevActive} = tuncer:create(ifname(), [tun, no_pi, {active, true}]),
-    [{Test, [Dev, DevActive]} | Config].
+    {ok, DevBusy} = tuncer:create(ifname(), [
+        tun,
+        no_pi,
+        {active, true},
+        {port_options, []}
+    ]),
+    [{Test, [Dev, DevActive, DevBusy]} | Config].
 
 end_per_testcase(Test, Config) ->
     Devs = ?config(Test, Config),
