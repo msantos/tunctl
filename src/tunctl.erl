@@ -41,7 +41,7 @@
 -include_lib("procket/include/ioctl.hrl").
 -include_lib("procket/include/procket.hrl").
 
--callback create(binary(), proplists:proplist()) -> {ok, fd(), binary()} | {error, file:posix()}.
+-callback create(binary(), [options()]) -> {ok, fd(), binary()} | {error, file:posix()}.
 -callback persist(fd(), boolean()) -> ok | {error, file:posix()}.
 -callback owner(fd(), integer()) -> ok | {error, file:posix()}.
 -callback group(fd(), integer()) -> ok | {error, file:posix()}.
@@ -68,10 +68,20 @@
 
 -type fd() :: integer().
 -type uint16_t() :: 0..16#ffff.
+-type options() ::
+    tun
+    | tap
+    | multi_queue
+    | no_pi
+    | one_queue
+    | vnet_hdr
+    | tun_excl
+    | {namespace, string()}.
 
 -export_type([
     fd/0,
-    uint16_t/0
+    uint16_t/0,
+    options/0
 ]).
 
 %%--------------------------------------------------------------------
@@ -143,7 +153,7 @@ create(Ifname) ->
 %% 19: tuncer: <POINTOPOINT,MULTICAST,NOARP> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 500
 %%     link/none
 %% '''
--spec create(binary(), proplists:proplist()) -> {ok, fd(), binary()} | {error, file:posix()}.
+-spec create(binary(), [options()]) -> {ok, fd(), binary()} | {error, file:posix()}.
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
     Module = os(),
     Module:create(Ifname, Opt).

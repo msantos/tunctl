@@ -73,21 +73,26 @@
 ]).
 
 -type dev() :: pid().
--type portopt() ::
+-type port_options() ::
     {parallelism, boolean()}
     | {busy_limits_port, {non_neg_integer(), non_neg_integer()} | disabled}
     | {busy_limits_msgq, {non_neg_integer(), non_neg_integer()} | disabled}.
+-type options() ::
+    tunctl:options()
+    | {active, boolean()}
+    | {port_options, port_options()}.
 
 -export_type([
     dev/0,
-    portopt/0
+    port_options/0,
+    options/0
 ]).
 
 -record(state, {
     % false, port
     port,
     % port options
-    port_opt :: [portopt()],
+    port_options :: [port_options()],
     % PID of controlling process
     pid :: pid(),
     % TUN/TAP file descriptor
@@ -182,7 +187,7 @@ create(Ifname) ->
 %% 4: tun0: <POINTOPOINT,MULTICAST,NOARP> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 500
 %%     link/none
 %% '''
--spec create(Ifname :: binary() | string(), Opt :: proplists:proplist()) -> gen_server:start_ret().
+-spec create(Ifname :: binary() | string(), Opt :: [options()]) -> gen_server:start_ret().
 create(Ifname, Opt) when is_list(Ifname) ->
     create(list_to_binary(Ifname), Opt);
 create(Ifname, Opt) when byte_size(Ifname) < ?IFNAMSIZ, is_list(Opt) ->
@@ -706,7 +711,7 @@ init([Pid, Ifname, Flag]) ->
 
             {ok, #state{
                 port = Port,
-                port_opt = Port_options,
+                port_options = Port_options,
                 pid = Pid,
                 fd = FD,
                 dev = Dev,
@@ -731,7 +736,7 @@ handle_call({controlling_process, Pid}, {Owner, _}, #state{pid = Owner} = State)
 handle_call({controlling_process, _}, _, State) ->
     {reply, {error, not_owner}, State};
 handle_call(
-    {setopt, {active, true}}, _From, #state{port = false, fd = FD, port_opt = Port_opt} = State
+    {setopt, {active, true}}, _From, #state{port = false, fd = FD, port_options = Port_opt} = State
 ) ->
     try set_mode(active, FD, Port_opt) of
         Port ->
