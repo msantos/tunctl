@@ -77,6 +77,8 @@
     {parallelism, boolean()}
     | {busy_limits_port, {non_neg_integer(), non_neg_integer()} | disabled}
     | {busy_limits_msgq, {non_neg_integer(), non_neg_integer()} | disabled}.
+%% port_options() are the supported subset of port options passed directly to [https://www.erlang.org/doc/man/erlang#open_port-2].
+
 -type options() ::
     tunctl:options()
     | {active, boolean()}
@@ -124,6 +126,8 @@
 %% 2: tap0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
 %%     link/ether 32:a9:6a:5b:48:c3 brd ff:ff:ff:ff:ff:ff
 %% '''
+%%
+%% @see create/2
 -spec create() -> gen_server:start_ret().
 create() ->
     create(<<>>).
@@ -142,6 +146,8 @@ create() ->
 %% 3: foo: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
 %%     link/ether 9e:f1:90:e2:2c:66 brd ff:ff:ff:ff:ff:ff
 %% '''
+%%
+%% @see create/2
 -spec create(Ifname :: binary() | string()) -> gen_server:start_ret().
 create(Ifname) ->
     create(Ifname, [tap, no_pi]).
@@ -166,12 +172,16 @@ create(Ifname) ->
 %%
 %%  Options contains a list of flags.
 %%
-%%      tun: create a tun interface
+%%      `tun': create a tun interface
 %%
-%%      tap: create a tap interface
+%%      `tap': create a tap interface
 %%
-%%      no_pi: do not prepend the data with a 4 byte header describing
+%%      `no_pi': do not prepend the data with a 4 byte header describing
 %%             the physical interface
+%%
+%%      `{port_options, port_options()}': options passed to
+%%             `erlang:open_port/2' when using `active' mode. Defaults to disabling
+%%             port busy checks: `[{busy_limits_port, disabled}, {busy_limits_msgq, disabled}]'
 %%
 %%  The options default to `[tap, no_pi, {active, false}]'.
 %%
