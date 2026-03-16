@@ -52,7 +52,9 @@
     create/2,
     persist/2,
     owner/2,
-    group/2
+    group/2,
+
+    header/1
 ]).
 
 %%--------------------------------------------------------------------
@@ -80,8 +82,11 @@ persist(_FD, _Status) ->
 owner(_FD, _Owner) ->
     ok.
 
-group(__FD, _Group) ->
+group(_FD, _Group) ->
     ok.
+
+header(<<?UINT16(Flags), ?UINT16(Proto), Buf/binary>>) ->
+    {tun_pi, Flags, Proto, Buf}.
 
 %%--------------------------------------------------------------------
 %%% Internal functions

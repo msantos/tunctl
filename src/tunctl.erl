@@ -421,6 +421,19 @@ cmd(Cmd) ->
 bool(true) -> 1;
 bool(false) -> 0.
 
+%% Validate interface name contains only safe characters
+%% (alphanumeric, hyphen, underscore, dot) to prevent shell injection.
+validate_ifname(Name) ->
+    case lists:all(fun(C) ->
+        (C >= $a andalso C =< $z) orelse
+        (C >= $A andalso C =< $Z) orelse
+        (C >= $0 andalso C =< $9) orelse
+        C =:= $- orelse C =:= $_ orelse C =:= $.
+    end, Name) of
+        true -> ok;
+        false -> erlang:error(badarg)
+    end.
+
 os() ->
     case os:type() of
         {unix, linux} -> tunctl_linux;
@@ -432,17 +445,21 @@ os() ->
 %% Shell out to ifconfig on systems where ioctl requires
 %% root privs (or native code hasn't been written yet).
 os_up(Dev, {A, B, C, D}, Mask) ->
+    DevStr = binary_to_list(Dev),
+    ok = validate_ifname(DevStr),
     Cmd =
         "sudo ifconfig " ++
-            binary_to_list(Dev) ++
+            DevStr ++
             " " ++
             inet_parse:ntoa({A, B, C, D}) ++
             "/" ++ integer_to_list(Mask) ++ " up",
     cmd(Cmd);
 os_up(Dev, {A, B, C, D, E, F, G, H}, Mask) ->
+    DevStr = binary_to_list(Dev),
+    ok = validate_ifname(DevStr),
     Cmd =
         "sudo ifconfig " ++
-            binary_to_list(Dev) ++
+            DevStr ++
             " inet6 add " ++
             inet_parse:ntoa({A, B, C, D, E, F, G, H}) ++
             "/" ++ integer_to_list(Mask) ++ " up",
@@ -453,7 +470,9 @@ os_down(Dev) ->
     % any IPv6 addresses
     _ = os_ipv6_down(Dev),
 
-    Cmd = "sudo ifconfig " ++ binary_to_list(Dev) ++ " down",
+    DevStr = binary_to_list(Dev),
+    ok = validate_ifname(DevStr),
+    Cmd = "sudo ifconfig " ++ DevStr ++ " down",
     cmd(Cmd).
 
 os_ipv6_down(Dev) ->

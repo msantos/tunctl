@@ -116,7 +116,7 @@ persist(_FD, _Status) ->
 owner(_FD, _Owner) ->
     ok.
 
-group(__FD, _Group) ->
+group(_FD, _Group) ->
     ok.
 
 header(<<?UINT32(Proto), Buf/binary>>) ->
