@@ -501,8 +501,10 @@ down(Ref) when is_pid(Ref) ->
 -spec mtu(dev()) -> integer().
 mtu(Ref) when is_pid(Ref) ->
     Dev = binary_to_list(devname(Ref)),
-    {ok, MTU} = inet:ifget(Dev, [mtu]),
-    proplists:get_value(mtu, MTU).
+    case inet:ifget(Dev, [mtu]) of
+        {ok, MTU} -> {ok, proplists:get_value(mtu, MTU)};
+        {error, _} = Error -> Error
+    end.
 
 %r @doc Set the MTU (maximum transmission unit) for the TUN/TAP device.
 %%
@@ -772,9 +774,11 @@ handle_call({send, Data}, _From, #state{port = false, fd = FD} = State) ->
     {reply, Reply, State};
 handle_call({send, Data}, _From, #state{port = Port} = State) ->
     Reply =
-        try erlang:port_command(Port, Data) of
+        try erlang:port_command(Port, Data, [nosuspend]) of
             true ->
-                ok
+                ok;
+            false ->
+                {error, eagain}
         catch
             error:Error ->
                 {error, Error}
@@ -829,18 +833,9 @@ handle_info({'EXIT', _, _}, #state{port = false} = State) ->
     {noreply, State};
 handle_info(
     {'EXIT', Port, Error},
-    #state{port = Port, pid = Pid, fd = FD, dev = Dev, persist = Persist} = State
+    #state{port = Port, pid = Pid, fd = _FD, dev = _Dev, persist = _Persist} = State
 ) ->
     Pid ! {tuntap_error, self(), Error},
-    _ =
-        case Persist of
-            true ->
-                ok;
-            false ->
-                _ = tunctl:down(Dev),
-                tunctl:persist(FD, false)
-        end,
-    procket:close(FD),
     {stop, normal, State};
 handle_info({Port, {data, Data}}, #state{port = Port, pid = Pid} = State) ->
     Pid ! {tuntap, self(), Data},
