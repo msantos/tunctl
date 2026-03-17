@@ -157,7 +157,7 @@ up(Dev, {A, B, C, D}, Mask) when byte_size(Dev) < ?IFNAMSIZ, Mask >= 0, Mask =< 
             Ifr =
                 <<Dev/bytes, 0:((?IFNAMSIZ - byte_size(Dev) - 1) * 8), 0:8, ?PF_INET:16/native,
                     0:16, A:8, B:8, C:8, D:8, 0:(8 * 8)>>,
-            case ifreq(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP) of
+            Res = case ifreq(Dev, Sock, Ifr, ?SIOCSIFADDR, ?IFF_RUNNING bor ?IFF_UP) of
                 ok ->
                     ifreq(
                         Dev,
@@ -170,7 +170,9 @@ up(Dev, {A, B, C, D}, Mask) when byte_size(Dev) < ?IFNAMSIZ, Mask >= 0, Mask =< 
                     );
                 {error, _} = Error ->
                     Error
-            end;
+            end,
+            ok = procket:close(Sock),
+            Res;
         {error, _} = Error ->
             Error
     end;
