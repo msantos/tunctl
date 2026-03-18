@@ -1,8 +1,8 @@
 {"1.2.0",
-[{<<"procket">>,{pkg,<<"procket">>,<<"0.9.8">>},0}]}.
+[{<<"procket">>,{pkg,<<"procket">>,<<"0.9.10">>},0}]}.
 [
 {pkg_hash,[
- {<<"procket">>, <<"03F22BD8C7407BE758782CAB9ED3BFC7E4B4514C7678B41B641267BA01D2C00A">>}]},
+ {<<"procket">>, <<"21824FA3881377754238A7A2E08B7865350CE3FA2CDE8BE54872806B9CDBB6BB">>}]},
 {pkg_hash_ext,[
- {<<"procket">>, <<"09BA10A7DA8BDAA4859E9AA821D75177DEDEAA6C1B2685F3A572032D3798B3D4">>}]}
+ {<<"procket">>, <<"B73A8E31F8395BEA90A5B27F95FDF32DE81FD8097AA51709D18BBF85DB04C9BA">>}]}
 ].
