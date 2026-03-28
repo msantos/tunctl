@@ -11,19 +11,19 @@ For IPv4 addresses, beam needs to have privileges to configure interfaces.
 
 To add cap_net_admin capabilities:
 
-```
+```bash
  sudo setcap cap_net_admin=ep /path/to/bin/beam.smp
 ```
 
 To check the privileges:
 
-```
+```bash
  getcap /path/to/bin/beam.smp
 ```
 
 To remove the privileges:
 
-```
+```bash
  sudo setcap -r cap_net_admin=ep /path/to/bin/beam.smp
 ```
 
@@ -38,7 +38,7 @@ http://tuntaposx.sourceforge.net/
 
 Allow the user running tunctl to call ifconfig using sudo:
 
-```
+```bash
 sudo visudo
 youruser ALL=NOPASSWD: /sbin/ifconfig tap*
 youruser ALL=NOPASSWD: /sbin/ifconfig tun*
@@ -50,20 +50,20 @@ tunctl uses the FreeBSD tuntap legacy interface.
 
 1. Ensure the tap device kernel module is loaded:
 
-   ```
+   ```bash
     $ kldstat
     $ kldload if_tap
    ```
 
    If you want the tap driver loaded on boot, add to /boot/loader.conf:
 
-   ```
+   ```bash
     if_tap_load="YES"
    ```
 
 2. Check cloning is enabled:
 
-   ```
+   ```bash
     $ sysctl net.link.tun.devfs_cloning
     net.link.tun.devfs_cloning: 1
 
@@ -73,7 +73,7 @@ tunctl uses the FreeBSD tuntap legacy interface.
 
 3. Allow the user running tunctl to call ifconfig using sudo:
 
-   ```
+   ```bash
     sudo visudo
     youruser ALL=NOPASSWD: /sbin/ifconfig tap*
     youruser ALL=NOPASSWD: /sbin/ifconfig tun*
@@ -83,7 +83,7 @@ tunctl uses the FreeBSD tuntap legacy interface.
 
 * "Passive" mode
 
-  ```
+  ```erlang
     1> {ok, Ref} = tuncer:create().
     {ok,<0.34.0>}
 
@@ -106,7 +106,7 @@ tunctl uses the FreeBSD tuntap legacy interface.
 
 * Active mode
 
-  ```
+  ```erlang
     1> {ok, Ref} = tuncer:create(<<>>, [tap, no_pi, {active, true}]).
     {ok,<0.34.0>}
 
@@ -139,31 +139,31 @@ protocol.
 
 Compile vpwn on the source and destination nodes:
 
-```
+```bash
 erlc -I deps -o ebin examples/*.erl
 ```
 
 Run Erlang on the destination node:
 
-```
+```bash
 erl -pa deps/*/ebin ebin -setcookie OMNOMNOM -name node
 ```
 
 And on the source node:
 
-```
+```bash
 erl -pa deps/*/ebin ebin -setcookie OMNOMNOM -name node
 ```
 
 Then start up the tunnel (replace the host name):
 
-```
+```erlang
 vpwn:start('node@vpn.example.com', "10.10.10.1", "10.10.10.2").
 ```
 
 Then connect over the tunnel to the second node:
 
-```
+```bash
 ping 10.10.10.2
 ssh 10.10.10.2
 ```
@@ -193,13 +193,13 @@ iface br0 inet dhcp
   * `erlbr0` is the name of the tap device connected to the bridge
   * `erl0, erl1, erl2` are the tap devices used by the containers
 
-```
+```erlang
 br:start(["erlbr0", "erl0", "erl1", "erl2"]).
 ```
 
 * In another shell, as root, bring up the uplink and attach it to the bridge:
 
-```
+```bash
 # ifconfig erlbr0 up
 # brctl addif br0 erlbr0
 # brctl show br0
@@ -214,15 +214,3 @@ lxc.network.type=phys
 lxc.network.link=erl0
 lxc.network.flags=up
 ```
-
-## TODO
-
-* Linux:
-  * the TUNSETIFF ioctl request to create the interface requires
-    CAP_NET_ADMIN privileges. Look at moving the interface creation
-    into the procket setuid binary for OSes that use the multiplexing
-    dev.
-
-  * add support for tun filtering
-
-* make sure tuncer can never leak file descriptors
