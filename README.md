@@ -1,4 +1,4 @@
-[![Package Version](https://img.shields.io/hexpm/v/epcap)](https://hex.pm/packages/tunctl)
+[![Package Version](https://img.shields.io/hexpm/v/tunctl)](https://hex.pm/packages/tunctl)
 [![Hex Docs](https://img.shields.io/badge/hex-docs)](https://hexdocs.pm/tunctl/)
 
 tunctl is an Erlang API for creating and using TUN/TAP interfaces.
